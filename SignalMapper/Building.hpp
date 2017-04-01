@@ -5,15 +5,18 @@
 #include <vector>
 #include <memory>
 
+class Simulation;
+
 class Building {
 private:
 	std::vector<std::shared_ptr<Obstacle>> obstacles;
 
 public:
-
 	template<typename T>
 	void addObstacle(T& obstacle)
 	{
 		obstacles.push_back(std::make_shared<T>(obstacle));
 	}
+
+	friend Simulation;
 };
