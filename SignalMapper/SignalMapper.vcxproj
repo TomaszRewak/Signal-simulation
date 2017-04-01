@@ -21,8 +21,9 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{BE71E232-A4F6-45EC-A6D3-79414C749F01}</ProjectGuid>
-    <RootNamespace>WiFiSignalMapper</RootNamespace>
+    <RootNamespace>SignalMapper</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
+    <ProjectName>SignalMapper</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -111,6 +112,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Building.hpp" />
+    <ClInclude Include="Obstacle.hpp" />
+    <ClInclude Include="Physics.hpp" />
+    <ClInclude Include="SignalMap.hpp" />
+    <ClInclude Include="Simulation.hpp" />
+    <ClInclude Include="Space.hpp" />
+    <ClInclude Include="Transmitter.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

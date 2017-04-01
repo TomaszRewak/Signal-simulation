@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Model">
+      <UniqueIdentifier>{90b48357-0479-4de3-8529-1a19e245309f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{3ae388e5-3341-4b35-bec6-68935ed36bc0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Building.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Obstacle.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Physics.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Space.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Simulation.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="SignalMap.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Transmitter.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Test.cpp">
+      <Filter>Testing</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
