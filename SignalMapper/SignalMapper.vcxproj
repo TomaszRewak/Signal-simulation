@@ -112,15 +112,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Building.hpp" />
+    <ClInclude Include="SimulationSpace.hpp" />
     <ClInclude Include="Obstacle.hpp" />
     <ClInclude Include="Physics.hpp" />
     <ClInclude Include="SignalMap.hpp" />
-    <ClInclude Include="Simulation.hpp" />
+    <ClInclude Include="SignalSimulation.hpp" />
     <ClInclude Include="Space.hpp" />
     <ClInclude Include="Transmitter.hpp" />
+    <ClInclude Include="VoxelSpace.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="SignalSimulationVoxel.hpp" />
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

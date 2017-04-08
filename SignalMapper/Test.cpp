@@ -1,36 +1,74 @@
 #include <iostream>
+#include <fstream>
 
-#include "Building.hpp"
-#include "Simulation.hpp"
+#include "SimulationSpace.hpp"
+#include "SignalSimulation.hpp"
 
 using namespace std;
 
 int main()
 {
-	Building building;
+	SimulationSpace building;
 
-	building.addObstacle(WallObstacle(Point(0, 0), Point(5, 0), 2, Material(0.5, 4, 0.1, 0.01)));
-	building.addObstacle(WallObstacle(Point(0, 0), Point(0, 5), 2, Material(0.5, 4, 0.1, 0.01)));
+	building.addObstacle(WallObstacle(Point(-5, -5), Point(0, -5), Material(0.5, 4, 0.1, 0.01)));
+	building.addObstacle(WallObstacle(Point(0, -5), Point(0, 0), Material(0.5, 4, 0.1, 0.01)));
+	building.addObstacle(WallObstacle(Point(0, 0), Point(5, 0), Material(0.5, 4, 0.1, 0.01)));
+	building.addObstacle(WallObstacle(Point(5, 0), Point(5, 5), Material(0.5, 4, 0.1, 0.01)));
+	building.addObstacle(WallObstacle(Point(5, 5), Point(-5, 5), Material(0.5, 4, 0.1, 0.01)));
+	building.addObstacle(WallObstacle(Point(-5, 5), Point(-5, -5), Material(0.5, 4, 0.1, 0.01)));
+	building.addObstacle(WallObstacle(Point(-5, 0), Point(-3, 0), Material(0.5, 4, 0.1, 0.01)));
+	building.addObstacle(WallObstacle(Point(-2, 0), Point(0, 0), Material(0.5, 4, 0.1, 0.01)));
+	building.addObstacle(WallObstacle(Point(0, 0), Point(0, 2), Material(0.5, 4, 0.1, 0.01)));
+	building.addObstacle(WallObstacle(Point(0, 3), Point(0, 5), Material(0.5, 4, 0.1, 0.01)));
 
-	Building buildingWithDoor = building;
 
-	buildingWithDoor.addObstacle(WallObstacle(Point(5, 0), Point(5, 4), 1, Material(0.3, 4, 0.1, 0.01)));
+	/*SimulationSpace buildingWithDoor = building;
 
-	SimulationParameters simulationParameters;
-	Simulation simulation(building, simulationParameters);
+	buildingWithDoor.addObstacle(WallObstacle(Point(5, 0), Point(5, 4), Material(0.3, 4, 0.1, 0.01)));*/
 
-	Transmitter transmitter(560, 1.);
-	SignalMap map = simulation.simulate(transmitter, Point(1, 1));
+	SignalSimulationParameters simulationParameters(0.2, 400);
+	SignalSimulation simulation(building, simulationParameters);
 
-	for (double x = -10; x < 10; x += .5)
+	Transmitter transmitter(560, 0.5);
+	SignalMap map = simulation.simulate(transmitter, Point(2.5, 2.5));
+
+	// save file
+
+	Rectangle boundingBox = building.boundingBox();
+	boundingBox.setWidth(boundingBox.getWidth() * 1.5);
+	boundingBox.setHeight(boundingBox.getHeight() * 1.5);
+
+	size_t imageSize = 1000;
+
+	double buildingLongerSide = max(boundingBox.getWidth(), boundingBox.getHeight());
+
+	fstream file;
+	file.open("Debug/test.pgm", ios::out);
+
+	file << "P2\n";
+	file << imageSize << ' ' << imageSize << ' ' << 256 << "\n";
+
+	for (size_t i = 0; i<imageSize; i++)
 	{
-		for (double y = -10; y < 10; y += .5)
+		for (size_t u = 0; u<imageSize; u++)
 		{
-			cout << (int)(map.getSignalStrength(x, y) * 10);
+			Point point(
+				boundingBox.minX() + buildingLongerSide * i / imageSize,
+				boundingBox.minY() + buildingLongerSide * u / imageSize
+			);
+
+			double signal = map.getSignalStrength(point);
+			bool obstacle = map.hasObstacle(point);
+
+			int color = obstacle ? 100 : (255 * std::min(signal, 1.));
+
+			file << color << ' ';
 		}
 
-		cout << endl;
+		file << "\n";
 	}
 
-	cin.get();
+	file.close();
+
+	//cin.get();
 }

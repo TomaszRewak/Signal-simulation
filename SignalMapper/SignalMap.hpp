@@ -1,25 +1,48 @@
 #pragma once
 
+#include "VoxelSpace.hpp"
+#include "SignalSimulationVoxel.hpp"
+
 #include <vector>
 
-class Simulation;
+class SignalSimulation;
+
 class SignalMap
 {
 private:
-	std::vector<double> map;
-	double voxelSize;
-	int mapWidth;
-	Rectangle area;
+	VoxelSpace<SignalSimulationVoxel> voxelSpace;
 
-	SignalMap(std::vector<double> map, double voxelSize, int mapWidth, Rectangle area) :
-		map(map), voxelSize(voxelSize), mapWidth(mapWidth), area(area)
+	SignalMap(VoxelSpace<SignalSimulationVoxel> voxelSpace) :
+		voxelSpace(voxelSpace)
 	{ }
 
 public:
-	double getSignalStrength(double x, double y)
+	double getSignalStrength(Point p)
 	{
-		return 0;
+		if (!voxelSpace.inRange(p))
+			return 0;
+
+		return voxelSpace.getVoxel(p).signalStrength;
 	}
 
-	friend Simulation;
+	double inRange(Point p) const 
+	{
+		int c = voxelSpace.getColumn(p),
+			r = voxelSpace.getRow(p);
+
+		return voxelSpace.inRange(c, r);
+	}
+
+	bool hasObstacle(Point p)
+	{
+		int c = voxelSpace.getColumn(p),
+			r = voxelSpace.getRow(p);
+
+		if (!voxelSpace.inRange(c, r))
+			return false;
+
+		return this->voxelSpace.getVoxel(c, r).obstacles.size() > 0;
+	}
+
+	friend SignalSimulation;
 };

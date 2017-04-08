@@ -9,9 +9,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Building.hpp">
-      <Filter>Model</Filter>
-    </ClInclude>
     <ClInclude Include="Obstacle.hpp">
       <Filter>Model</Filter>
     </ClInclude>
@@ -21,19 +18,28 @@
     <ClInclude Include="Space.hpp">
       <Filter>Model</Filter>
     </ClInclude>
-    <ClInclude Include="Simulation.hpp">
+    <ClInclude Include="Transmitter.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="VoxelSpace.hpp">
       <Filter>Model</Filter>
     </ClInclude>
     <ClInclude Include="SignalMap.hpp">
       <Filter>Model</Filter>
     </ClInclude>
-    <ClInclude Include="Transmitter.hpp">
+    <ClInclude Include="SignalSimulation.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="SimulationSpace.hpp">
       <Filter>Model</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Test.cpp">
       <Filter>Testing</Filter>
+    </ClCompile>
+    <ClCompile Include="SignalSimulationVoxel.hpp">
+      <Filter>Model</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
