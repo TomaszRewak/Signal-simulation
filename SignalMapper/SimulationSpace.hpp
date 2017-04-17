@@ -12,7 +12,7 @@ class SignalSimulation;
 class SimulationSpace
 {
 private:
-	std::vector<std::shared_ptr<Obstacle>> obstacles;
+	std::vector<WallObstacle> obstacles;
 	
 	bool useCustomSimulationArea = false;
 	Rectangle customSimulationArea;
@@ -21,7 +21,7 @@ public:
 	template<typename T>
 	void addObstacle(const T& obstacle)
 	{
-		this->obstacles.push_back(std::make_shared<T>(obstacle));
+		this->obstacles.push_back(obstacle);
 	}
 
 	void setCustomSimulationArea(Rectangle rectangle)
@@ -43,7 +43,7 @@ public:
 
 		for (auto obstacle : this->obstacles)
 		{
-			auto obstacleBoundingBox = obstacle->boundingBox();
+			auto obstacleBoundingBox = obstacle.boundingBox();
 
 			minX = std::min(minX, obstacleBoundingBox.minX());
 			maxX = std::max(maxX, obstacleBoundingBox.maxX());

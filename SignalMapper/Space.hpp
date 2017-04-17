@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cmath>
+#include <limits>
+#include <algorithm>
 
 struct Point
 {
@@ -45,11 +47,39 @@ struct FreeVector
 		return FreeVector(dy, -dx);
 	}
 
-	FreeVector operator*(double by) const 
+	FreeVector operator*(double by) const
 	{
 		return FreeVector(dx * by, dy * by);
 	}
+
+	FreeVector operator+(FreeVector v) const
+	{
+		return FreeVector(dx + v.dx, dy + v.dy);
+	}
+
+	FreeVector operator-(FreeVector v) const
+	{
+		return FreeVector(dx - v.dx, dy - v.dy);
+	}
+
+	double operator*(FreeVector vector) const
+	{
+		return dx * vector.dx + dy * vector.dy;
+	}
+
+	FreeVector reflectedBy(FreeVector normal) const
+	{
+		FreeVector d = *this;
+		FreeVector n = normal.normalized();
+
+		return d - n.normalized() * 2 * (d * n);
+	}
 };
+
+inline Point operator+(const Point& point, const FreeVector& vector)
+{
+	return Point(point.x + vector.dx, point.y + vector.dy);
+}
 
 struct Vector
 {
@@ -97,4 +127,82 @@ public:
 
 	void setWidth(double width) { this->width = width; }
 	void setHeight(double height) { this->height = height; }
+};
+
+struct Line
+{
+	Point a, b;
+
+	Line(Point a, Point b) :
+		a(a), b(b)
+	{ }
+
+	FreeVector normalVector() const { return FreeVector(a, b).transposed().normalized(); }
+};
+
+struct IntersectionPoint
+{
+private:
+	double x, y;
+	double t;
+	bool isInBounds;
+
+public:
+	IntersectionPoint() :
+		t(std::numeric_limits<double>::max()),
+		isInBounds(false)
+	{ }
+
+	IntersectionPoint(const Line& obstacle, const Line& ray)
+	{
+		const double
+			x1 = obstacle.a.x,
+			x2 = obstacle.b.x,
+			y1 = obstacle.a.y,
+			y2 = obstacle.b.y,
+			x1p = ray.a.x,
+			x2p = ray.b.x,
+			y1p = ray.a.y,
+			y2p = ray.b.y;
+
+		const double
+			dx = x2 - x1,
+			dy = y2 - y1,
+			dxp = x2p - x1p,
+			dyp = y2p - y1p;
+
+		const double
+			divider = dyp * dx - dxp * dy;
+
+		if (divider == 0) 
+		{
+			t = std::numeric_limits<double>::max();
+
+			x = x2p;
+			y = y2p;
+
+			isInBounds = false;
+		}
+		else
+		{
+			t = ((x1p - x1) * dy - (y1p - y1) * dx) / divider;
+
+			x = x1p + dxp * t;
+			y = y1p + dyp * t;
+
+			isInBounds =
+				t > 0 &&
+				t <= 1 &&
+				(
+					std::abs(dx) > std::abs(dy) ?
+					x >= std::min(x1, x2) && x <= std::max(x1, x2) :
+					y >= std::min(y1, y2) && y <= std::max(y1, y2)
+				);
+		}
+	}
+
+	bool inBounds() const { return isInBounds; }
+
+	operator Point() const { return Point(x, y); }
+	bool operator<(const IntersectionPoint& second) const { return t < second.t; }
 };

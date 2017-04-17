@@ -38,7 +38,7 @@
     <ClCompile Include="Test.cpp">
       <Filter>Testing</Filter>
     </ClCompile>
-    <ClCompile Include="SignalSimulationVoxel.hpp">
+    <ClCompile Include="SignalSimulationSpace.hpp">
       <Filter>Model</Filter>
     </ClCompile>
   </ItemGroup>

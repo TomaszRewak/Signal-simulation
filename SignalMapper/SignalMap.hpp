@@ -1,7 +1,7 @@
 #pragma once
 
 #include "VoxelSpace.hpp"
-#include "SignalSimulationVoxel.hpp"
+#include "SignalSimulationSpace.hpp"
 
 #include <vector>
 
@@ -41,7 +41,7 @@ public:
 		if (!voxelSpace.inRange(c, r))
 			return false;
 
-		return this->voxelSpace.getVoxel(c, r).obstacles.size() > 0;
+		return this->voxelSpace.getVoxel(c, r).hasObstacle;
 	}
 
 	friend SignalSimulation;

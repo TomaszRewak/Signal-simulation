@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <math.h>
+#include <algorithm>
 
 template<typename T>
 class VoxelSpace
@@ -19,8 +20,8 @@ public:
 	VoxelSpace(Rectangle spaceSize, double voxelSize) :
 		spaceSize(spaceSize),
 		voxelSize(voxelSize),
-		xResolution((int) spaceSize.getWidth() / voxelSize + 1),
-		yResolution((int) spaceSize.getHeight() / voxelSize + 1)
+		xResolution((int) (spaceSize.getWidth() / voxelSize + 1)),
+		yResolution((int) (spaceSize.getHeight() / voxelSize + 1))
 	{
 		voxels = std::vector<T>(xResolution * yResolution);
 	}
@@ -35,11 +36,9 @@ public:
 		return voxel;
 	}
 
-	T& getVoxel(Point realPoint)
+	T& getVoxel(Point point)
 	{
-		Point voxelPoint = toVoxelSpace(realPoint);
-
-		return getVoxel((int)voxelPoint.x, (int)voxelPoint.y);
+		return getVoxel(getColumn(point), getRow(point));
 	}
 
 	bool inRange(int column, int row) const
@@ -51,21 +50,55 @@ public:
 			row < yResolution;
 	}
 
-	bool inRange(Point realPoint) const
+	bool inRange(Point point) const
 	{
-		Point voxelPoint = toVoxelSpace(realPoint);
-
-		return inRange((int)voxelPoint.x, (int)voxelPoint.y);
+		return inRange(getColumn(point), getRow(point));
 	}
 
-	Point toVoxelSpace(Point point) const
+	Vector moveToNextVoxel(Vector vector) const
 	{
+		Vector newVector = vector;
+
+		if (vector.freeVector.dx == 0 && vector.freeVector.dy == 0)
+			return newVector;
+
+		if (std::abs(vector.freeVector.dx) > std::abs(vector.freeVector.dy))
+		{
+			double newX = getVoxelCenter(
+				getColumn(vector.point) + (vector.freeVector.dx > 0 ? 1 : -1),
+				getRow(vector.point)
+			).x;
+
+			double dx = newX - vector.point.x;
+
+			double newY = vector.point.y + vector.freeVector.dy / vector.freeVector.dx * dx;
+
+			newVector.point = Point(newX, newY);
+		}
+		else
+		{
+			double newY = getVoxelCenter(
+				getColumn(vector.point),
+				getRow(vector.point) + (vector.freeVector.dy > 0 ? 1 : -1)
+			).y;
+
+			double dy = newY - vector.point.y;
+
+			double newX = vector.point.x + vector.freeVector.dx / vector.freeVector.dy * dy;
+
+			newVector.point = Point(newX, newY);
+		}
+
+		return newVector;
+	}
+
+	int getColumn(const Point& point) const { return (int)std::floor((point.x - spaceSize.minX()) / voxelSize); }
+	int getRow(const Point& point) const { return (int)std::floor((point.y - spaceSize.minY()) / voxelSize); }
+
+	Point getVoxelCenter(int column, int row) const {
 		return Point(
-			(point.x - spaceSize.minX()) / voxelSize,
-			(point.y - spaceSize.minY()) / voxelSize
+			(column + 0.5) * voxelSize + spaceSize.minX(),
+			(row + 0.5) * voxelSize + spaceSize.minY()
 		);
 	}
-
-	int getColumn(Point p) const { return (int)toVoxelSpace(p).x; }
-	int getRow(Point p) const { return (int)toVoxelSpace(p).y; }
 };

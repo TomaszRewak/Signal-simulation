@@ -10,27 +10,48 @@ int main()
 {
 	SimulationSpace building;
 
-	building.addObstacle(WallObstacle(Point(-5, -5), Point(0, -5), Material(0.5, 4, 0.1, 0.01)));
-	building.addObstacle(WallObstacle(Point(0, -5), Point(0, 0), Material(0.5, 4, 0.1, 0.01)));
-	building.addObstacle(WallObstacle(Point(0, 0), Point(5, 0), Material(0.5, 4, 0.1, 0.01)));
-	building.addObstacle(WallObstacle(Point(5, 0), Point(5, 5), Material(0.5, 4, 0.1, 0.01)));
-	building.addObstacle(WallObstacle(Point(5, 5), Point(-5, 5), Material(0.5, 4, 0.1, 0.01)));
-	building.addObstacle(WallObstacle(Point(-5, 5), Point(-5, -5), Material(0.5, 4, 0.1, 0.01)));
-	building.addObstacle(WallObstacle(Point(-5, 0), Point(-3, 0), Material(0.5, 4, 0.1, 0.01)));
-	building.addObstacle(WallObstacle(Point(-2, 0), Point(0, 0), Material(0.5, 4, 0.1, 0.01)));
-	building.addObstacle(WallObstacle(Point(0, 0), Point(0, 2), Material(0.5, 4, 0.1, 0.01)));
-	building.addObstacle(WallObstacle(Point(0, 3), Point(0, 5), Material(0.5, 4, 0.1, 0.01)));
+	Material material(0.8, 4, 0.4, 0.01);
 
+	vector<Point> points{
+		Point(-4, 4),
+		Point(-0.25, 4),
+		Point(-0.25, 2.5),
+		Point(0, 2.5),
+		Point(0, 4),
+		Point(4, 4),
+		Point(4, 0),
+		Point(2.5, 0),
+		Point(2.5, -0.25),
+		Point(4, -0.25),
+		Point(4, -1.5),
+		Point(4.25, -1.5),
+		Point(4.25, 4),
+		Point(6, 4),
+		Point(6, -4),
+		Point(4.25, -4),
+		Point(4.25, -2.5),
+		Point(4, -2.5),
+		Point(4, -4),
+		Point(0, -4),
+		Point(0, -0.25),
+		Point(1.5, -0.25),
+		Point(1.5, 0),
+		Point(0, 0),
+		Point(0, 1.5),
+		Point(-0.25, 1.5),
+		Point(-0.25, 0),
+		Point(-4, 0),
+		Point(-4, 4)
+	};
 
-	/*SimulationSpace buildingWithDoor = building;
+	for (int i = 0; i < points.size() - 1; i++)
+		building.addObstacle(WallObstacle(points[i], points[i + 1], material));
 
-	buildingWithDoor.addObstacle(WallObstacle(Point(5, 0), Point(5, 4), Material(0.3, 4, 0.1, 0.01)));*/
-
-	SignalSimulationParameters simulationParameters(0.2, 400);
+	SignalSimulationParameters simulationParameters(0.02, 2000);
 	SignalSimulation simulation(building, simulationParameters);
 
 	Transmitter transmitter(560, 0.5);
-	SignalMap map = simulation.simulate(transmitter, Point(2.5, 2.5));
+	SignalMap map = simulation.simulate(transmitter, Point(2, -3));
 
 	// save file
 
@@ -42,15 +63,17 @@ int main()
 
 	double buildingLongerSide = max(boundingBox.getWidth(), boundingBox.getHeight());
 
+	cout << "Ready" << endl;
+
 	fstream file;
 	file.open("Debug/test.pgm", ios::out);
 
 	file << "P2\n";
 	file << imageSize << ' ' << imageSize << ' ' << 256 << "\n";
 
-	for (size_t i = 0; i<imageSize; i++)
+	for (size_t i = 0; i < imageSize; i++)
 	{
-		for (size_t u = 0; u<imageSize; u++)
+		for (size_t u = 0; u < imageSize; u++)
 		{
 			Point point(
 				boundingBox.minX() + buildingLongerSide * i / imageSize,
@@ -60,7 +83,7 @@ int main()
 			double signal = map.getSignalStrength(point);
 			bool obstacle = map.hasObstacle(point);
 
-			int color = obstacle ? 100 : (255 * std::min(signal, 1.));
+			int color = obstacle ? 100 : (int)(255 * std::min(signal, 1.));
 
 			file << color << ' ';
 		}
