@@ -10,7 +10,7 @@ int main()
 {
 	SimulationSpace building;
 
-	Material material(0.8, 4, 0.4, 0.01);
+	Material material(0.8, 0.9);
 
 	vector<Point> points{
 		Point(-4, 4),
@@ -47,7 +47,7 @@ int main()
 	for (int i = 0; i < points.size() - 1; i++)
 		building.addObstacle(WallObstacle(points[i], points[i + 1], material));
 
-	SignalSimulationParameters simulationParameters(0.02, 2000);
+	SignalSimulationParameters simulationParameters(0.05, 1000, 5, 0.01);
 	SignalSimulation simulation(building, simulationParameters);
 
 	Transmitter transmitter(560, 0.5);
@@ -80,7 +80,7 @@ int main()
 				boundingBox.minY() + buildingLongerSide * u / imageSize
 			);
 
-			double signal = map.getSignalStrength(point);
+			double signal = map.getSignalStrength(point) * 10;
 			bool obstacle = map.hasObstacle(point);
 
 			int color = obstacle ? 100 : (int)(255 * std::min(signal, 1.));
