@@ -8,7 +8,11 @@ using namespace std;
 
 int main()
 {
-	Material material(0.8, 0.9);
+	// http://www.am1.us/Protected_Papers/E10589_Propagation_Losses_2_and_5GHz.pdf
+	Material material(
+		PowerCoefficient(-4.43 * 5, PowerCoefficientUnit::dB), 
+		PowerCoefficient(-12.53, PowerCoefficientUnit::dB)
+	);
 
 	std::vector<Point> interior{
 		Point(-4, 0),
@@ -42,7 +46,9 @@ int main()
 	};
 
 	std::vector<Point> exterior{
-		Point(-4.5, -4.5),
+		Point(-4.5, -0.5),
+		Point(-0.5, -0.5),
+		Point(-0.5, -4.5),
 		Point(6.5, -4.5),
 		Point(6.5, 4.5),
 		Point(-4.5, 4.5)
@@ -54,7 +60,7 @@ int main()
 		);
 
 	std::vector<ObstaclePtr> obstacles{
-		std::make_shared<UniformObstacle>(buildingShape, Material(0.8, 0.9))
+		std::make_shared<UniformObstacle>(buildingShape, material)
 	};
 
 	cout << "Preparing Space" << endl;

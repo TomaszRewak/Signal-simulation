@@ -11,13 +11,12 @@ struct ObstacleDistortion
 {
 	FreeVector normalVector;
 	double distance;
-	double coefficient;
+	PowerCoefficient coefficient;
 
-	ObstacleDistortion() :
-		coefficient(0)
+	ObstacleDistortion()
 	{ }
 
-	ObstacleDistortion(const Intersection& intersection, double coefficient) :
+	ObstacleDistortion(const Intersection& intersection, const PowerCoefficient& coefficient) :
 		normalVector(intersection.normalVector),
 		distance(intersection.distance),
 		coefficient(coefficient)
@@ -31,7 +30,7 @@ struct ObstacleDistortion
 class Obstacle 
 {
 public:
-	virtual double absorption(Point point) const = 0;
+	virtual PowerCoefficient absorption(Point point) const = 0;
 	virtual std::vector<ObstacleDistortion> distortion(Vector vector) const = 0;
 };
 using ObstaclePtr = std::shared_ptr<const Obstacle>;
@@ -46,12 +45,12 @@ public:
 		shape(shape), material(material)
 	{ }
 
-	virtual double absorption(Point point) const
+	virtual PowerCoefficient absorption(Point point) const
 	{
 		if (shape->contains(point))
 			return material.absorption;
 		else
-			return 0;
+			return PowerCoefficient();
 	}
 
 	virtual std::vector<ObstacleDistortion> distortion(Vector vector) const
