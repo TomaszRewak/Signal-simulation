@@ -15,13 +15,7 @@
     <ClInclude Include="Physics.hpp">
       <Filter>Model</Filter>
     </ClInclude>
-    <ClInclude Include="Space.hpp">
-      <Filter>Model</Filter>
-    </ClInclude>
     <ClInclude Include="Transmitter.hpp">
-      <Filter>Model</Filter>
-    </ClInclude>
-    <ClInclude Include="VoxelSpace.hpp">
       <Filter>Model</Filter>
     </ClInclude>
     <ClInclude Include="SignalMap.hpp">
@@ -30,7 +24,13 @@
     <ClInclude Include="SignalSimulation.hpp">
       <Filter>Model</Filter>
     </ClInclude>
-    <ClInclude Include="SimulationSpace.hpp">
+    <ClInclude Include="SignalWaveSimulation.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Math.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="UniformFiniteElementsSpace.hpp">
       <Filter>Model</Filter>
     </ClInclude>
   </ItemGroup>
@@ -39,6 +39,9 @@
       <Filter>Testing</Filter>
     </ClCompile>
     <ClCompile Include="SignalSimulationSpace.hpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry.hpp">
       <Filter>Model</Filter>
     </ClCompile>
   </ItemGroup>

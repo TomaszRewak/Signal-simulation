@@ -1,69 +1,95 @@
 #include <iostream>
 #include <fstream>
+#include <memory>
 
-#include "SimulationSpace.hpp"
 #include "SignalSimulation.hpp"
 
 using namespace std;
 
 int main()
 {
-	SimulationSpace building;
-
 	Material material(0.8, 0.9);
 
-	vector<Point> points{
-		Point(-4, 4),
-		Point(-0.25, 4),
-		Point(-0.25, 2.5),
-		Point(0, 2.5),
-		Point(0, 4),
-		Point(4, 4),
-		Point(4, 0),
-		Point(2.5, 0),
-		Point(2.5, -0.25),
-		Point(4, -0.25),
-		Point(4, -1.5),
-		Point(4.25, -1.5),
-		Point(4.25, 4),
-		Point(6, 4),
-		Point(6, -4),
-		Point(4.25, -4),
-		Point(4.25, -2.5),
-		Point(4, -2.5),
-		Point(4, -4),
-		Point(0, -4),
-		Point(0, -0.25),
-		Point(1.5, -0.25),
-		Point(1.5, 0),
-		Point(0, 0),
-		Point(0, 1.5),
-		Point(-0.25, 1.5),
-		Point(-0.25, 0),
+	std::vector<Point> interior{
 		Point(-4, 0),
-		Point(-4, 4)
+		Point(-0.25, 0),
+		Point(-0.25, 1.5),
+		Point(0, 1.5),
+		Point(0, 0),
+		Point(1.5, 0),
+		Point(1.5, -0.25),
+		Point(0, -0.25),
+		Point(0, -4),
+		Point(4, -4),
+		Point(4, -2.5),
+		Point(4.25, -2.5),
+		Point(4.25, -4),
+		Point(6, -4),
+		Point(6, 4),
+		Point(4.25, 4),
+		Point(4.25, -1.5),
+		Point(4, -1.5),
+		Point(4, -0.25),
+		Point(2.5, -0.25),
+		Point(2.5, 0),
+		Point(4, 0),
+		Point(4, 4),
+		Point(0, 4),
+		Point(0, 2.5),
+		Point(-0.25, 2.5),
+		Point(-0.25, 4),
+		Point(-4, 4),
 	};
 
-	for (int i = 0; i < points.size() - 1; i++)
-		building.addObstacle(WallObstacle(points[i], points[i + 1], material));
+	std::vector<Point> exterior{
+		Point(-4.5, -4.5),
+		Point(6.5, -4.5),
+		Point(6.5, 4.5),
+		Point(-4.5, 4.5)
+	};
 
-	SignalSimulationParameters simulationParameters(0.05, 1000, 5, 0.01);
-	SignalSimulation simulation(building, simulationParameters);
+	ShapePtr buildingShape = std::make_shared<CSGShapesDifference>(
+		std::make_shared<Polygon>(exterior),
+		std::make_shared<Polygon>(interior)
+		);
 
-	Transmitter transmitter(560, 0.5);
-	SignalMap map = simulation.simulate(transmitter, Point(2, -3));
+	std::vector<ObstaclePtr> obstacles{
+		std::make_shared<UniformObstacle>(buildingShape, Material(0.8, 0.9))
+	};
+
+	cout << "Preparing Space" << endl;
+
+	SignalSimulationSpacePtr simulationSpace = std::make_shared<SignalSimulationSpace>(
+		Rectangle(-5, -5, 7, 5),
+		0.05,
+		obstacles
+	);
+
+	cout << "Space ready" << endl;
+
+	SignalSimulationParameters simulationParameters(1000, 5, Power(1e-9, PowerUnit::mW));
+	SignalSimulation simulation(simulationSpace, simulationParameters);
+
+	SignalMapPtr signalMap = simulation.simulate(Point(2, -3));
+
+	Transmitter transmitter(
+		Frequency(2.4, FrequencyUnit::GHz), 
+		Power(20., PowerUnit::dBm), 
+		AntenaGain(12, AntenaGainUnit::dBi)
+	);
+	Reciver reciver(
+		AntenaGain(0, AntenaGainUnit::dBd)
+	);
 
 	// save file
 
-	Rectangle boundingBox = building.boundingBox();
-	boundingBox.setWidth(boundingBox.getWidth() * 1.5);
-	boundingBox.setHeight(boundingBox.getHeight() * 1.5);
+	Rectangle boundingBox = simulationSpace->bounds;
 
 	size_t imageSize = 1000;
 
 	double buildingLongerSide = max(boundingBox.getWidth(), boundingBox.getHeight());
 
-	cout << "Ready" << endl;
+	cout << "Simulation ready" << endl;
 
 	fstream file;
 	file.open("Debug/test.pgm", ios::out);
@@ -80,10 +106,22 @@ int main()
 				boundingBox.minY() + buildingLongerSide * u / imageSize
 			);
 
-			double signal = map.getSignalStrength(point) * 10;
-			bool obstacle = map.hasObstacle(point);
+			int color = 0;
 
-			int color = obstacle ? 100 : (int)(255 * std::min(signal, 1.));
+			if (simulationSpace->inRange(point))
+			{
+				double signal = signalMap->getSignalStrength(transmitter, reciver, point).get(PowerUnit::dBm);
+				double absorption = simulationSpace->getElement(point).absorption;
+
+				signal = (signal + 90) / 60;
+				signal = std::min(signal, 1.);
+				signal = std::max(signal, 0.);
+
+				color = (int)(255 * signal);
+
+				if (absorption != 0)
+					color = 50;
+			}
 
 			file << color << ' ';
 		}

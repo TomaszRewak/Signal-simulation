@@ -1,48 +1,42 @@
 #pragma once
 
-#include "VoxelSpace.hpp"
+#include "UniformFiniteElementsSpace.hpp"
 #include "SignalSimulationSpace.hpp"
+#include "Transmitter.hpp"
 
 #include <vector>
 
 class SignalSimulation;
 
-class SignalMap
+struct SignalMapElement
 {
-private:
-	VoxelSpace<SignalSimulationVoxel> voxelSpace;
+	double signalStrangth = 0;
+};
 
-	SignalMap(VoxelSpace<SignalSimulationVoxel> voxelSpace) :
-		voxelSpace(voxelSpace)
+class SignalMap : protected UniformFiniteElementsSpace<SignalMapElement>
+{
+public:
+	SignalMap(SignalSimulationSpacePtr simulationSpace) :
+		UniformFiniteElementsSpace<SignalMapElement>(simulationSpace->bounds, simulationSpace->elementsDistance)
 	{ }
 
-public:
-	double getSignalStrength(Point p)
+	Power getSignalStrength(const Transmitter& transmitter, const Reciver& reciver, Point p) const
 	{
-		if (!voxelSpace.inRange(p))
-			return 0;
+		if (!inRange(p))
+			return Power();
 
-		return voxelSpace.getVoxel(p).signalStrength;
-	}
+		double
+			signalStrength = transmitter.power.get(PowerUnit::W),
+			frequency = transmitter.frequency.get(FrequencyUnit::m),
+			transmitterGain = transmitter.antenaGain.get(AntenaGainUnit::coefficient),
+			reciverGain = reciver.antenaGain.get(AntenaGainUnit::coefficient);
 
-	double inRange(Point p) const 
-	{
-		int c = voxelSpace.getColumn(p),
-			r = voxelSpace.getRow(p);
 
-		return voxelSpace.inRange(c, r);
-	}
+		double power = signalStrength * transmitterGain * reciverGain * std::pow(frequency, 2) * getElement(p).signalStrangth;
 
-	bool hasObstacle(Point p)
-	{
-		int c = voxelSpace.getColumn(p),
-			r = voxelSpace.getRow(p);
-
-		if (!voxelSpace.inRange(c, r))
-			return false;
-
-		return this->voxelSpace.getVoxel(c, r).hasObstacle;
+		return Power(power, PowerUnit::W);
 	}
 
 	friend SignalSimulation;
 };
+using SignalMapPtr = std::shared_ptr<const SignalMap>;

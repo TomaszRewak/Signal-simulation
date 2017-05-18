@@ -1,21 +1,19 @@
 #pragma once
 
-#include "SimulationSpace.hpp"
 #include "SignalSimulationSpace.hpp"
 #include "SignalMap.hpp"
 #include "Transmitter.hpp"
-#include "VoxelSpace.hpp"
+#include "UniformFiniteElementsSpace.hpp"
 
 #include <vector>
+#include <algorithm>
 
 struct SignalSimulationParameters {
-	double voxelSize;
 	int raysCount;
 	int reflectionCount;
-	double minimalSignalStrength;
+	Power minimalSignalStrength;
 
-	SignalSimulationParameters(double voxelSize, int raysCount = 100, int reflectionCount = 5, double minimalSignalStrength = 0.1) :
-		voxelSize(voxelSize),
+	SignalSimulationParameters(int raysCount = 100, int reflectionCount = 5, Power minimalSignalStrength = Power()) :
 		raysCount(raysCount),
 		reflectionCount(reflectionCount),
 		minimalSignalStrength(minimalSignalStrength)
@@ -27,38 +25,51 @@ class SignalSimulation
 private:
 	struct Ray
 	{
-		Vector vector;
+		Point source;
+		DiscretePoint position;
+		FreeVector normalVector;
+		FreeVector offset;
 
 		int reflections = 0;
 		int lastObstacle = -1;
 
-		double strength = 1;
-		double conductivity = 1;
+		double absorption = 0;
 		double distance = 0;
 
-		Ray(Vector vector, int reflections) :
-			vector(vector),
+		Ray(Point source, DiscretePoint position, FreeVector normalVector, int reflections) :
+			source(source),
+			position(position),
+			normalVector(normalVector.normalized()),
 			reflections(reflections)
 		{ }
 	};
 
-	const SimulationSpace simulationSpace;
+	const SignalSimulationSpacePtr simulationSpace;
 	const SignalSimulationParameters simulationParameters;
 
-	void shootRays(VoxelSpace<SignalSimulationVoxel>& voxelSpace, Point transmitterPosition) const
+public:
+	SignalSimulation(SignalSimulationSpacePtr simulationSpace, SignalSimulationParameters simulationParameters = SignalSimulationParameters()) :
+		simulationSpace(simulationSpace),
+		simulationParameters(simulationParameters)
+	{ }
+
+	SignalMapPtr simulate(Point transmitterPosition) const
 	{
+		auto signalMap = std::make_shared<SignalMap>(simulationSpace);
+		double minimalSignalStrength = simulationParameters.minimalSignalStrength.get(PowerUnit::W);
+
 		std::vector<Ray> rays;
 
 		for (int i = 0; i < simulationParameters.raysCount; i++)
 		{
 			double alpha = 0.123 + std::atan(1.) * 8 * i / simulationParameters.raysCount;
 
-			Vector rayVector(
+			Ray ray(
 				transmitterPosition,
-				FreeVector(std::sin(alpha), std::cos(alpha))
+				signalMap->getDiscretePosition(transmitterPosition),
+				FreeVector(std::sin(alpha), std::cos(alpha)),
+				simulationParameters.reflectionCount
 			);
-
-			Ray ray(rayVector, simulationParameters.reflectionCount);
 
 			rays.push_back(ray);
 		}
@@ -68,139 +79,34 @@ private:
 			Ray ray = *rays.rbegin();
 			rays.pop_back();
 
-			if (!voxelSpace.inRange(ray.vector.point))
+			if (!simulationSpace->inRange(ray.position))
 				continue;
 
-			if (ray.strength < simulationParameters.minimalSignalStrength)
+			double distance = ray.distance + FreeVector(ray.source, simulationSpace->getPosition(ray.position)).d();
+			double strength = std::min(1. / std::pow(4 * 3.141592653589793238463 * distance, 2), 1.) * std::pow(2.71828182846, -ray.absorption);
+
+			if (strength < minimalSignalStrength)
 				continue;
 
-			auto& voxel = voxelSpace.getVoxel(ray.vector.point);
-			voxel.signalStrength = std::max(voxel.signalStrength, ray.strength / (ray.distance * ray.distance));
+			auto& mapElement = signalMap->getElement(ray.position);
+			mapElement.signalStrangth = std::max(mapElement.signalStrangth, strength);
 
-			Point newPoint = ray.vector.point + ray.vector.freeVector.normalized() * voxelSpace.getVoxelSize() * 0.5;
+			auto& simulationElement = simulationSpace->getElement(ray.position);
 
-			/*bool reflected = false;
-			FreeVector reflectedVector;*/
+			FreeVector newOffset = ray.offset + ray.normalVector;
+			DiscreteDirection direction = newOffset;
 
-			IntersectionPoint closestIntersection;
-			int intersectedObstacle;
+			auto& connection = simulationElement.connections[direction.getIndex()];
 
-			for (int obstacleIndex : voxel.obstacles)
-			{
-				if (obstacleIndex == ray.lastObstacle)
-					continue;
+			if (connection.distortion.coefficient > 0)
+				continue;
 
-				const WallObstacle& obstacle = simulationSpace.obstacles[obstacleIndex];
+			ray.position = ray.position + newOffset;
+			ray.offset = newOffset - direction;
 
-				Line rayLine(ray.vector.point, newPoint);
-
-				IntersectionPoint intersection(obstacle.wallLine, rayLine);
-
-				if (intersection.inBounds() && intersection < closestIntersection)
-				{
-					closestIntersection = intersection;
-					intersectedObstacle = obstacleIndex;
-				}
-			}
-
-			Ray newRay = ray;
-			newRay.vector.point = newPoint;
-
-			double conductivity = 1;
-			if (closestIntersection.inBounds())
-			{
-				const WallObstacle& obstacle = simulationSpace.obstacles[intersectedObstacle];
-
-				if (obstacle.wallLine.normalVector() * ray.vector.freeVector < 0)
-					conductivity = (1 - obstacle.material.absorption);
-				else
-					conductivity = 1 / (1 - obstacle.material.absorption);
-
-				newRay.lastObstacle = intersectedObstacle;
-				newRay.vector.point = closestIntersection;
-			}
-
-
-			double distance = FreeVector(ray.vector.point, newRay.vector.point).d();
-			newRay.distance += distance;
-			newRay.strength *= std::pow(ray.conductivity, distance);
-
-			if (newRay.reflections > 0 && closestIntersection.inBounds())
-			{
-				const WallObstacle& obstacle = simulationSpace.obstacles[intersectedObstacle];
-
-				if (obstacle.wallLine.normalVector() * ray.vector.freeVector < 0)
-				{
-					Ray reflectedRay = newRay;
-					reflectedRay.reflections--;
-
-					reflectedRay.vector.freeVector = reflectedRay.vector.freeVector.reflectedBy(obstacle.wallLine.normalVector());
-					reflectedRay.strength *= 0.8;
-
-					rays.push_back(reflectedRay);
-				}
-			}
-
-			newRay.conductivity = std::min(newRay.conductivity * conductivity, 1.);
-			rays.push_back(newRay);
-
-			/*if (!voxelSpace.inRange(ray.vector.point))
-			continue;
-
-			auto& voxel = voxelSpace.getVoxel(ray.vector.point);
-			voxel.signalStrength = std::max(voxel.signalStrength, ray.strength);
-
-			Ray newRay = ray;
-			newRay.vector.point = ray.vector.point + ray.vector.freeVector.normalized() * (voxelSpace.getVoxelSize() / 2);
-			newRay.strength *= 0.99;
-
-			if (!voxelSpace.inRange(newRay.vector.point))
-			continue;
-
-			auto& newVoxel = voxelSpace.getVoxel(newRay.vector.point);*/
-
-			/*if (newVoxel.obstacles.size() > 0)
-			{
-			for (auto& obstacle : newVoxel.obstacles)
-			newRay.strength *= (1 - obstacle.material.absorption);
-
-
-			if (ray.reflections > 0)
-			{
-			Ray reflectedRay = ray;
-
-			newRay.reflections--;
-			reflectedRay.reflections--;
-
-			for (auto& obstacle : newVoxel.obstacles)
-			{
-			reflectedRay.vector.freeVector = reflectedRay.vector.freeVector.reflectedBy(obstacle.normalVector);
-			reflectedRay.strength *= obstacle.material.reflection;
-			}
-
-			rays.push_back(reflectedRay);
-			}
-			}
-
-			rays.push_back(newRay);*/
+			rays.push_back(ray);
 		}
-	}
 
-public:
-	SignalSimulation(SimulationSpace simulationSpace, SignalSimulationParameters simulationParameters) :
-		simulationSpace(simulationSpace),
-		simulationParameters(simulationParameters)
-	{ }
-
-	SignalMap simulate(Transmitter transmitter, Point transmitterPosition) const
-	{
-		SignalSimulationSpace voxelSpace(
-			this->simulationSpace.boundingBox(),
-			this->simulationParameters.voxelSize,
-			this->simulationSpace.obstacles);
-
-		this->shootRays(voxelSpace, transmitterPosition);
-
-		return SignalMap(voxelSpace);
+		return signalMap;
 	}
 };

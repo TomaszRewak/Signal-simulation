@@ -112,16 +112,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="SimulationSpace.hpp" />
+    <ClInclude Include="SignalWaveSimulation.hpp" />
     <ClInclude Include="Obstacle.hpp" />
     <ClInclude Include="Physics.hpp" />
     <ClInclude Include="SignalMap.hpp" />
     <ClInclude Include="SignalSimulation.hpp" />
-    <ClInclude Include="Space.hpp" />
+    <ClInclude Include="Math.hpp" />
     <ClInclude Include="Transmitter.hpp" />
-    <ClInclude Include="VoxelSpace.hpp" />
+    <ClInclude Include="UniformFiniteElementsSpace.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Geometry.hpp" />
     <ClCompile Include="SignalSimulationSpace.hpp" />
     <ClCompile Include="Test.cpp" />
   </ItemGroup>

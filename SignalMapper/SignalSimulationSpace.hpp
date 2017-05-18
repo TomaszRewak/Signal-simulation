@@ -1,95 +1,93 @@
 #pragma once
 
-#include "VoxelSpace.hpp"
+#include "UniformFiniteElementsSpace.hpp"
 #include "Obstacle.hpp"
 
-struct SignalSimulationVoxel
-{
-	std::vector<int> obstacles;
-	bool hasObstacle = false;
+#include <algorithm>
+#include <memory>
 
-	double signalStrength = 0;
+struct SignalSimulationDistortion {
+	FreeVector normalVector;
+	double distance;
+	double coefficient = 0;
+
+	SignalSimulationDistortion() :
+		coefficient(0)
+	{};
+
+	SignalSimulationDistortion(FreeVector normalVector, double distance, double coefficient) :
+		normalVector(normalVector), distance(distance), coefficient(coefficient)
+	{ }
+
+	SignalSimulationDistortion operator+(const SignalSimulationDistortion& second) const
+	{
+		double secondCoefficient = (1 - coefficient) * second.coefficient;
+
+		return SignalSimulationDistortion(
+			(normalVector * coefficient + second.normalVector * secondCoefficient).normalized(),
+			(distance * coefficient + second.distance * secondCoefficient) / (coefficient + secondCoefficient),
+			coefficient + secondCoefficient
+		);
+	}
 };
 
-class SignalSimulationSpace : public VoxelSpace<SignalSimulationVoxel>
+struct SignalSimulationConnection
 {
-private:
-	void initializeVoxel(int column, int row, int obstacleIndex, bool swap)
+	SignalSimulationDistortion distortion;
+};
+
+struct SignalSimulationElement
+{
+	double absorption;
+	std::array<SignalSimulationConnection, 4> connections;
+};
+
+class SignalSimulationSpace : public UniformFiniteElementsSpace<SignalSimulationElement>
+{
+public:
+	SignalSimulationSpace(Rectangle spaceSize, double elementsDistance, const std::vector<ObstaclePtr>& obstacles) :
+		UniformFiniteElementsSpace(spaceSize, elementsDistance)
 	{
-		if (swap)
-			std::swap(column, row);
+		const auto directions = DiscreteDirection::baseDirections();
 
-		for (int i = -1; i <= 1; i++) {
-			for (int j = -1; j <= 1; j++) {
-				int c = column + i,
-					r = row + j;
+		for (const auto& obstacle : obstacles)
+		{
+			for (int x = 0; x < resolution.width; x++)
+			{
+				for (int y = 0; y < resolution.height; y++)
+				{
+					DiscretePoint elementPosition(x, y);
 
-				if (inRange(c, r) && (getVoxel(c, r).obstacles.size() == 0 || *getVoxel(c, r).obstacles.rbegin() != obstacleIndex))
-					getVoxel(c, r).obstacles.push_back(obstacleIndex);
+					auto& element = getElement(elementPosition);
+					element.absorption = obstacle->absorption(getPosition(elementPosition));
+
+					for (auto direction : DiscreteDirection::baseDirections())
+					{
+						DiscretePoint connectedElementPosition = elementPosition + direction;
+						Vector ray(
+							getPosition(elementPosition),
+							getPosition(connectedElementPosition)
+						);
+
+						auto& connection = getElement(elementPosition).connections[direction.getIndex()];
+						auto distortions = obstacle->distortion(ray);
+
+						std::sort(distortions.begin(), distortions.end());
+
+						for (const auto& distortion : distortions)
+						{
+							SignalSimulationDistortion signalDistortion(
+								distortion.normalVector,
+								distortion.distance,
+								distortion.coefficient
+							);
+
+							connection.distortion = connection.distortion + signalDistortion;
+						}
+					}
+				}
 			}
 		}
-
-		if (inRange(column, row))
-			getVoxel(column, row).hasObstacle |= true;
-	}
-
-	void initializeObstacle(int index, Point a, Point b)
-	{
-		Rectangle box(a, b);
-		Rectangle spaceSize = getSpaceSize();
-		double voxelSize = getVoxelSize();
-
-		double
-			ax = (a.x - spaceSize.minX()) / voxelSize,
-			ay = (a.y - spaceSize.minY()) / voxelSize,
-			bx = (b.x - spaceSize.minX()) / voxelSize,
-			by = (b.y - spaceSize.minY()) / voxelSize;
-
-		bool swapXY = box.maxX() - box.minX() < box.maxY() - box.minY();
-
-		if (swapXY)
-		{
-			std::swap(ax, ay);
-			std::swap(bx, by);
-		}
-
-		if (ax > bx)
-		{
-			std::swap(ax, bx);
-			std::swap(ay, by);
-		}
-
-		double dy = (by - ay) / (bx - ax);
-		int x0 = (int)ax;
-		double y0 = ay - ax * dy;
-
-		int segments = (int)(std::ceil(bx) - std::floor(ax));
-
-		for (int i = 0; i < segments; i++)
-		{
-			int x = x0 + i;
-			int y = (x0 + 0.5 + i) * dy + y0;
-			int yHalf = (x0 + 1 + i) * dy + y0;
-
-			initializeVoxel(x, y, index, swapXY);
-			initializeVoxel(x + (yHalf == y ? 1 : 0), yHalf, index, swapXY);
-		}
-	}
-
-	void initializeObstacles(const std::vector<WallObstacle>& obstacles)
-	{
-		for (int i = 0; i < obstacles.size(); i++)
-		{
-			const WallObstacle& obstacle = obstacles[i];
-
-			this->initializeObstacle(i, obstacle.wallLine.a, obstacle.wallLine.b);
-		}
-	}
-
-public:
-	SignalSimulationSpace(Rectangle spaceSize, double voxelSize, const std::vector<WallObstacle>& obstacles) :
-		VoxelSpace(spaceSize, voxelSize)
-	{
-		this->initializeObstacles(obstacles);
 	}
 };
+using SignalSimulationSpacePtr = std::shared_ptr<const SignalSimulationSpace>;
