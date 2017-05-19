@@ -150,58 +150,98 @@ public:
 	}
 };
 
-enum class PowerCoefficientUnit
+enum class AbsorptionCoefficientUnit
+{
+	alpha,
+	dB,
+	coefficient
+};
+
+struct AbsorptionCoefficient {
+private:
+	double alpha;
+
+public:
+	AbsorptionCoefficient() :
+		alpha(0)
+	{ }
+
+	AbsorptionCoefficient(double value, double thickness, AbsorptionCoefficientUnit unit)
+	{
+		set(value, thickness, unit);
+	}
+
+	double get(AbsorptionCoefficientUnit unit, double thickness) const
+	{
+		switch (unit)
+		{
+		case AbsorptionCoefficientUnit::alpha:
+			return alpha * thickness;
+		case AbsorptionCoefficientUnit::dB:
+			return 10 * std::log10(get(AbsorptionCoefficientUnit::coefficient, thickness));
+		case AbsorptionCoefficientUnit::coefficient:
+			return std::exp(-get(AbsorptionCoefficientUnit::alpha, thickness));
+		}
+	}
+
+	void set(double value, double thickness, AbsorptionCoefficientUnit unit)
+	{
+		switch (unit)
+		{
+		case AbsorptionCoefficientUnit::alpha:
+			alpha = value / thickness;
+			break;
+		case AbsorptionCoefficientUnit::dB:
+			set(std::pow(10.0, value / 10.0), thickness, AbsorptionCoefficientUnit::coefficient);
+			break;
+		case AbsorptionCoefficientUnit::coefficient:
+			set(-std::log(value), thickness, AbsorptionCoefficientUnit::alpha);
+			break;
+		}
+	}
+};
+
+enum class ReflectionCoefficientUnit 
 {
 	coefficient,
 	dB
 };
 
-struct PowerCoefficient {
+struct ReflectionCoefficient {
 private:
 	double coefficient;
 
 public:
-	PowerCoefficient() :
+	ReflectionCoefficient() :
 		coefficient(0)
 	{ }
 
-	PowerCoefficient(double value, PowerCoefficientUnit unit)
+	ReflectionCoefficient(double value, ReflectionCoefficientUnit unit)
 	{
 		set(value, unit);
 	}
 
-	double get(PowerCoefficientUnit unit) const
+	double get(ReflectionCoefficientUnit unit) const
 	{
 		switch (unit)
 		{
-		case PowerCoefficientUnit::coefficient:
+		case ReflectionCoefficientUnit::coefficient:
 			return coefficient;
-		case PowerCoefficientUnit::dB:
+		case ReflectionCoefficientUnit::dB:
 			return 10 * std::log10(coefficient);
 		}
 	}
 
-	void set(double value, PowerCoefficientUnit unit)
+	void set(double value, ReflectionCoefficientUnit unit)
 	{
 		switch (unit)
 		{
-		case PowerCoefficientUnit::coefficient:
+		case ReflectionCoefficientUnit::coefficient:
 			coefficient = value;
 			break;
-		case PowerCoefficientUnit::dB:
+		case ReflectionCoefficientUnit::dB:
 			coefficient = std::pow(10.0, value / 10.0);
 			break;
 		}
 	}
-};
-
-struct Material
-{
-	const PowerCoefficient reflection;
-	const PowerCoefficient absorption;
-
-	Material(PowerCoefficient reflection, PowerCoefficient absorption) :
-		reflection(reflection),
-		absorption(absorption)
-	{ }
 };

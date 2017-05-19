@@ -57,6 +57,7 @@ public:
 	{
 		auto signalMap = std::make_shared<SignalMap>(simulationSpace);
 		double minimalSignalStrength = simulationParameters.minimalSignalStrength.get(PowerUnit::W);
+		double frequency = simulationSpace->frequency.get(FrequencyUnit::m);
 
 		std::vector<Ray> rays;
 
@@ -83,7 +84,7 @@ public:
 				continue;
 
 			double distance = ray.distance + FreeVector(ray.source, simulationSpace->getPosition(ray.position)).d();
-			double strength = std::min(1. / std::pow(4 * 3.141592653589793238463 * distance, 2), 1.) * std::pow(2.71828182846, -ray.absorption);
+			double strength = std::min(frequency / std::pow(4 * 3.141592653589793238463 * distance, 2), 1.) * std::pow(2.71828182846, -ray.absorption);
 
 			if (strength < minimalSignalStrength)
 				continue;

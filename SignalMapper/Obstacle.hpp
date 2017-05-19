@@ -2,7 +2,7 @@
 
 #include "Math.hpp"
 #include "Geometry.hpp"
-#include "Physics.hpp"
+#include "Material.hpp"
 #include "UniformFiniteElementsSpace.hpp"
 
 #include <memory>
@@ -11,12 +11,12 @@ struct ObstacleDistortion
 {
 	FreeVector normalVector;
 	double distance;
-	PowerCoefficient coefficient;
+	ReflectionCoefficient coefficient;
 
 	ObstacleDistortion()
 	{ }
 
-	ObstacleDistortion(const Intersection& intersection, const PowerCoefficient& coefficient) :
+	ObstacleDistortion(const Intersection& intersection, const ReflectionCoefficient& coefficient) :
 		normalVector(intersection.normalVector),
 		distance(intersection.distance),
 		coefficient(coefficient)
@@ -30,8 +30,8 @@ struct ObstacleDistortion
 class Obstacle 
 {
 public:
-	virtual PowerCoefficient absorption(Point point) const = 0;
-	virtual std::vector<ObstacleDistortion> distortion(Vector vector) const = 0;
+	virtual AbsorptionCoefficient absorption(Point point, Frequency frequency) const = 0;
+	virtual std::vector<ObstacleDistortion> distortion(Vector vector, Frequency frequency) const = 0;
 };
 using ObstaclePtr = std::shared_ptr<const Obstacle>;
 
@@ -39,27 +39,27 @@ class UniformObstacle : public Obstacle
 {
 public:
 	const ShapePtr shape;
-	const Material material;
+	const MaterialPtr material;
 
-	UniformObstacle(ShapePtr shape, Material material) :
+	UniformObstacle(ShapePtr shape, MaterialPtr material) :
 		shape(shape), material(material)
 	{ }
 
-	virtual PowerCoefficient absorption(Point point) const
+	virtual AbsorptionCoefficient absorption(Point point, Frequency frequency) const
 	{
 		if (shape->contains(point))
-			return material.absorption;
+			return material->absorption(frequency);
 		else
-			return PowerCoefficient();
+			return AbsorptionCoefficient();
 	}
 
-	virtual std::vector<ObstacleDistortion> distortion(Vector vector) const
+	virtual std::vector<ObstacleDistortion> distortion(Vector vector, Frequency frequency) const
 	{
 		std::vector<ObstacleDistortion> distortions;
 
 		for (const auto& intersection : shape->intersections(vector))
 			if (intersection.inRange && intersection.normalVector * vector.freeVector < 0)
-				distortions.push_back(ObstacleDistortion(intersection, material.reflection));
+				distortions.push_back(ObstacleDistortion(intersection, material->reflection(frequency)));
 
 		return distortions;
 	}

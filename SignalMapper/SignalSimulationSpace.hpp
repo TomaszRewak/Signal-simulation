@@ -45,8 +45,11 @@ struct SignalSimulationElement
 class SignalSimulationSpace : public UniformFiniteElementsSpace<SignalSimulationElement>
 {
 public:
-	SignalSimulationSpace(Rectangle spaceSize, double elementsDistance, const std::vector<ObstaclePtr>& obstacles) :
-		UniformFiniteElementsSpace(spaceSize, elementsDistance)
+	const Frequency frequency;
+
+	SignalSimulationSpace(const Frequency frequency, const std::vector<ObstaclePtr>& obstacles, Rectangle spaceSize, double elementsDistance) :
+		UniformFiniteElementsSpace(spaceSize, elementsDistance),
+		frequency(frequency)
 	{
 		const auto directions = DiscreteDirection::baseDirections();
 
@@ -59,7 +62,7 @@ public:
 					DiscretePoint elementPosition(x, y);
 
 					auto& element = getElement(elementPosition);
-					element.absorption = obstacle->absorption(getPosition(elementPosition)).get(PowerCoefficientUnit::coefficient);
+					element.absorption = obstacle->absorption(getPosition(elementPosition), frequency).get(AbsorptionCoefficientUnit::coefficient, elementsDistance);
 
 					for (auto direction : DiscreteDirection::baseDirections())
 					{
@@ -70,7 +73,7 @@ public:
 						);
 
 						auto& connection = getElement(elementPosition).connections[direction.getIndex()];
-						auto distortions = obstacle->distortion(ray);
+						auto distortions = obstacle->distortion(ray, frequency);
 
 						std::sort(distortions.begin(), distortions.end());
 
@@ -79,7 +82,7 @@ public:
 							SignalSimulationDistortion signalDistortion(
 								distortion.normalVector,
 								distortion.distance,
-								distortion.coefficient.get(PowerCoefficientUnit::coefficient)
+								distortion.coefficient.get(ReflectionCoefficientUnit::coefficient)
 							);
 
 							connection.distortion = connection.distortion + signalDistortion;
@@ -88,6 +91,11 @@ public:
 				}
 			}
 		}
+	}
+
+	bool hasObstacle(Point point) const
+	{
+		return getElement(point).absorption < 1;
 	}
 };
 using SignalSimulationSpacePtr = std::shared_ptr<const SignalSimulationSpace>;

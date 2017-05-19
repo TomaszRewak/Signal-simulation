@@ -33,6 +33,9 @@
     <ClInclude Include="UniformFiniteElementsSpace.hpp">
       <Filter>Model</Filter>
     </ClInclude>
+    <ClInclude Include="Material.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Test.cpp">

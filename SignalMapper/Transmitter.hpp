@@ -4,12 +4,11 @@
 
 struct Transmitter
 {
-	Frequency frequency;
 	Power power;
 	AntenaGain antenaGain;
 
-	Transmitter(Frequency frequency, Power power, AntenaGain antenaGain):
-		frequency(frequency), power(power), antenaGain(antenaGain)
+	Transmitter(Power power, AntenaGain antenaGain):
+		power(power), antenaGain(antenaGain)
 	{ }
 };
 

@@ -9,10 +9,6 @@ using namespace std;
 int main()
 {
 	// http://www.am1.us/Protected_Papers/E10589_Propagation_Losses_2_and_5GHz.pdf
-	Material material(
-		PowerCoefficient(-4.43 * 5, PowerCoefficientUnit::dB), 
-		PowerCoefficient(-12.53, PowerCoefficientUnit::dB)
-	);
 
 	std::vector<Point> interior{
 		Point(-4, 0),
@@ -59,6 +55,11 @@ int main()
 		std::make_shared<Polygon>(interior)
 		);
 
+	MaterialPtr material = std::make_shared<UniformMaterial>(
+		ReflectionCoefficient(-6.24, ReflectionCoefficientUnit::dB),
+		AbsorptionCoefficient(-4.43, 0.2, AbsorptionCoefficientUnit::dB)
+		);
+
 	std::vector<ObstaclePtr> obstacles{
 		std::make_shared<UniformObstacle>(buildingShape, material)
 	};
@@ -66,9 +67,10 @@ int main()
 	cout << "Preparing Space" << endl;
 
 	SignalSimulationSpacePtr simulationSpace = std::make_shared<SignalSimulationSpace>(
+		Frequency(2.4, FrequencyUnit::GHz),
+		obstacles,
 		Rectangle(-5, -5, 7, 5),
-		0.05,
-		obstacles
+		0.05
 	);
 
 	cout << "Space ready" << endl;
@@ -79,7 +81,6 @@ int main()
 	SignalMapPtr signalMap = simulation.simulate(Point(2, -3));
 
 	Transmitter transmitter(
-		Frequency(2.4, FrequencyUnit::GHz), 
 		Power(20., PowerUnit::dBm), 
 		AntenaGain(12, AntenaGainUnit::dBi)
 	);
@@ -116,17 +117,18 @@ int main()
 
 			if (simulationSpace->inRange(point))
 			{
-				double signal = signalMap->getSignalStrength(transmitter, reciver, point).get(PowerUnit::dBm);
-				double absorption = simulationSpace->getElement(point).absorption;
-
-				signal = (signal + 90) / 60;
-				signal = std::min(signal, 1.);
-				signal = std::max(signal, 0.);
-
-				color = (int)(255 * signal);
-
-				if (absorption != 0)
+				if (simulationSpace->hasObstacle(point))
 					color = 50;
+				else
+				{
+					double signal = signalMap->getSignalStrength(transmitter, reciver, point).get(PowerUnit::dBm);
+
+					signal = (signal + 90) / 60;
+					signal = std::min(signal, 1.);
+					signal = std::max(signal, 0.);
+
+					color = (int)(255 * signal);
+				}
 			}
 
 			file << color << ' ';

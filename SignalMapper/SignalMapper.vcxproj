@@ -112,6 +112,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Material.hpp" />
     <ClInclude Include="SignalWaveSimulation.hpp" />
     <ClInclude Include="Obstacle.hpp" />
     <ClInclude Include="Physics.hpp" />

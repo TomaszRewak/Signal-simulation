@@ -27,12 +27,11 @@ public:
 
 		double
 			signalStrength = transmitter.power.get(PowerUnit::W),
-			frequency = transmitter.frequency.get(FrequencyUnit::m),
 			transmitterGain = transmitter.antenaGain.get(AntenaGainUnit::coefficient),
 			reciverGain = reciver.antenaGain.get(AntenaGainUnit::coefficient);
 
 
-		double power = signalStrength * transmitterGain * reciverGain * std::pow(frequency, 2) * getElement(p).signalStrangth;
+		double power = signalStrength * transmitterGain * reciverGain * getElement(p).signalStrangth;
 
 		return Power(power, PowerUnit::W);
 	}
