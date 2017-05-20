@@ -56,8 +56,8 @@ public:
 	SignalMapPtr simulate(Point transmitterPosition) const
 	{
 		auto signalMap = std::make_shared<SignalMap>(simulationSpace);
-		double minimalSignalStrength = simulationParameters.minimalSignalStrength.get(PowerUnit::W);
-		double frequency = simulationSpace->frequency.get(FrequencyUnit::m);
+		double minimalSignalStrength = simulationParameters.minimalSignalStrength.get(Power::Unit::W);
+		double frequency = simulationSpace->frequency.get(Frequency::Unit::m);
 
 		std::vector<Ray> rays;
 

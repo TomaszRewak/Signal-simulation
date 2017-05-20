@@ -1,10 +1,49 @@
 #pragma once
 
-enum class PowerUnit {
-	W,
-	mW,
-	dBW,
-	dBm
+struct Distance 
+{
+protected:
+	double m;
+
+public:
+	enum class Unit
+	{
+		m,
+		mm
+	};
+
+	Distance() :
+		m(0)
+	{ }
+
+	Distance(double value, Unit unit)
+	{
+		set(value, unit);
+	}
+
+	double get(Unit unit)
+	{
+		switch (unit)
+		{
+		case Distance::Unit::m:
+			return m;
+		case Distance::Unit::mm:
+			return m * 1000;
+		}
+	}
+
+	void set(double value, Unit unit)
+	{
+		switch (unit)
+		{
+		case Distance::Unit::m:
+			m = value;
+			break;
+		case Distance::Unit::mm:
+			m = value / 1000;
+			break;
+		}
+	}
 };
 
 struct Power {
@@ -12,53 +51,55 @@ private:
 	double mW;
 
 public:
+	enum class Unit {
+		W,
+		mW,
+		dBW,
+		dBm
+	};
+
 	Power() :
 		mW(0)
 	{ }
 
-	Power(double value, PowerUnit unit)
+	Power(double value, Unit unit)
 	{
 		set(value, unit);
 	}
 
-	double get(PowerUnit unit) const
+	double get(Unit unit) const
 	{
 		switch (unit)
 		{
-		case PowerUnit::mW:
+		case Unit::mW:
 			return mW;
-		case PowerUnit::W:
-			return get(PowerUnit::mW) / 1000;
-		case PowerUnit::dBm:
+		case Unit::W:
+			return get(Unit::mW) / 1000;
+		case Unit::dBm:
 			return 10 * std::log10(mW);
-		case PowerUnit::dBW:
-			return get(PowerUnit::dBm) - 30;
+		case Unit::dBW:
+			return get(Unit::dBm) - 30;
 		}
 	}
 
-	void set(double value, PowerUnit unit)
+	void set(double value, Unit unit)
 	{
 		switch (unit)
 		{
-		case PowerUnit::mW:
+		case Unit::mW:
 			mW = value;
 			break;
-		case PowerUnit::W:
-			set(value / 1000, PowerUnit::mW);
+		case Unit::W:
+			set(value / 1000, Unit::mW);
 			break;
-		case PowerUnit::dBm:
+		case Unit::dBm:
 			mW = std::pow(10.0, value / 10.0);
 			break;
-		case PowerUnit::dBW:
-			set(value + 30, PowerUnit::dBm);
+		case Unit::dBW:
+			set(value + 30, Unit::dBm);
 			break;
 		}
 	}
-};
-
-enum class FrequencyUnit {
-	m,
-	GHz
 };
 
 struct Frequency {
@@ -66,44 +107,43 @@ protected:
 	double meters;
 
 public:
+	enum class Unit {
+		m,
+		GHz
+	};
+
 	Frequency() :
 		meters(0)
 	{ }
 
-	Frequency(double value, FrequencyUnit unit)
+	Frequency(double value, Unit unit)
 	{
 		set(value, unit);
 	}
 
-	double get(FrequencyUnit unit) const
+	double get(Unit unit) const
 	{
 		switch (unit)
 		{
-		case FrequencyUnit::m:
+		case Unit::m:
 			return meters;
-		case FrequencyUnit::GHz:
+		case Unit::GHz:
 			return 0.299792458 / meters;
 		}
 	}
 
-	void set(double value, FrequencyUnit unit)
+	void set(double value, Unit unit)
 	{
 		switch (unit)
 		{
-		case FrequencyUnit::m:
+		case Unit::m:
 			meters = value;
 			break;
-		case FrequencyUnit::GHz:
+		case Unit::GHz:
 			meters = 0.299792458 / value;
 			break;
 		}
 	}
-};
-
-enum class AntenaGainUnit {
-	coefficient,
-	dBi,
-	dBd
 };
 
 struct AntenaGain {
@@ -111,50 +151,49 @@ protected:
 	double coefficient;
 
 public:
+	enum class Unit {
+		coefficient,
+		dBi,
+		dBd
+	};
+
 	AntenaGain() :
 		coefficient(1)
 	{ }
 
-	AntenaGain(double value, AntenaGainUnit unit)
+	AntenaGain(double value, Unit unit)
 	{
 		set(value, unit);
 	}
 
-	double get(AntenaGainUnit unit) const
+	double get(Unit unit) const
 	{
 		switch (unit)
 		{
-		case AntenaGainUnit::coefficient:
+		case Unit::coefficient:
 			return coefficient;
-		case AntenaGainUnit::dBi:
+		case Unit::dBi:
 			return 10 * std::log10(coefficient);
-		case AntenaGainUnit::dBd:
+		case Unit::dBd:
 			return 10 * std::log10(coefficient / 1.64);
 		}
 	}
 
-	void set(double value, AntenaGainUnit unit)
+	void set(double value, Unit unit)
 	{
 		switch (unit)
 		{
-		case AntenaGainUnit::coefficient:
+		case Unit::coefficient:
 			coefficient = value;
 			break;
-		case AntenaGainUnit::dBi:
+		case Unit::dBi:
 			coefficient = std::pow(10, value / 10);
 			break;
-		case AntenaGainUnit::dBd:
+		case Unit::dBd:
 			coefficient = std::pow(10, value / 10) * 1.64;
 			break;
 		}
 	}
-};
-
-enum class AbsorptionCoefficientUnit
-{
-	alpha,
-	dB,
-	coefficient
 };
 
 struct AbsorptionCoefficient {
@@ -162,49 +201,50 @@ private:
 	double alpha;
 
 public:
+	enum class Unit
+	{
+		alpha,
+		dB,
+		coefficient
+	};
+
 	AbsorptionCoefficient() :
 		alpha(0)
 	{ }
 
-	AbsorptionCoefficient(double value, double thickness, AbsorptionCoefficientUnit unit)
+	AbsorptionCoefficient(double value, Unit unit, Distance thickness)
 	{
-		set(value, thickness, unit);
+		set(value, unit, thickness);
 	}
 
-	double get(AbsorptionCoefficientUnit unit, double thickness) const
-	{
-		switch (unit)
-		{
-		case AbsorptionCoefficientUnit::alpha:
-			return alpha * thickness;
-		case AbsorptionCoefficientUnit::dB:
-			return 10 * std::log10(get(AbsorptionCoefficientUnit::coefficient, thickness));
-		case AbsorptionCoefficientUnit::coefficient:
-			return std::exp(-get(AbsorptionCoefficientUnit::alpha, thickness));
-		}
-	}
-
-	void set(double value, double thickness, AbsorptionCoefficientUnit unit)
+	double get(Unit unit, Distance thickness) const
 	{
 		switch (unit)
 		{
-		case AbsorptionCoefficientUnit::alpha:
-			alpha = value / thickness;
+		case Unit::alpha:
+			return alpha * thickness.get(Distance::Unit::m);
+		case Unit::dB:
+			return 10 * std::log10(get(Unit::coefficient, thickness));
+		case Unit::coefficient:
+			return std::exp(-get(Unit::alpha, thickness));
+		}
+	}
+
+	void set(double value, Unit unit, Distance thickness)
+	{
+		switch (unit)
+		{
+		case Unit::alpha:
+			alpha = value / thickness.get(Distance::Unit::m);
 			break;
-		case AbsorptionCoefficientUnit::dB:
-			set(std::pow(10.0, value / 10.0), thickness, AbsorptionCoefficientUnit::coefficient);
+		case Unit::dB:
+			set(std::pow(10.0, value / 10.0), Unit::coefficient, thickness);
 			break;
-		case AbsorptionCoefficientUnit::coefficient:
-			set(-std::log(value), thickness, AbsorptionCoefficientUnit::alpha);
+		case Unit::coefficient:
+			set(-std::log(value), Unit::alpha, thickness);
 			break;
 		}
 	}
-};
-
-enum class ReflectionCoefficientUnit 
-{
-	coefficient,
-	dB
 };
 
 struct ReflectionCoefficient {
@@ -212,34 +252,40 @@ private:
 	double coefficient;
 
 public:
+	enum class Unit
+	{
+		coefficient,
+		dB
+	};
+
 	ReflectionCoefficient() :
 		coefficient(0)
 	{ }
 
-	ReflectionCoefficient(double value, ReflectionCoefficientUnit unit)
+	ReflectionCoefficient(double value, Unit unit)
 	{
 		set(value, unit);
 	}
 
-	double get(ReflectionCoefficientUnit unit) const
+	double get(Unit unit) const
 	{
 		switch (unit)
 		{
-		case ReflectionCoefficientUnit::coefficient:
+		case Unit::coefficient:
 			return coefficient;
-		case ReflectionCoefficientUnit::dB:
+		case Unit::dB:
 			return 10 * std::log10(coefficient);
 		}
 	}
 
-	void set(double value, ReflectionCoefficientUnit unit)
+	void set(double value, Unit unit)
 	{
 		switch (unit)
 		{
-		case ReflectionCoefficientUnit::coefficient:
+		case Unit::coefficient:
 			coefficient = value;
 			break;
-		case ReflectionCoefficientUnit::dB:
+		case Unit::dB:
 			coefficient = std::pow(10.0, value / 10.0);
 			break;
 		}

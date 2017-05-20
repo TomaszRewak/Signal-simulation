@@ -62,7 +62,9 @@ public:
 					DiscretePoint elementPosition(x, y);
 
 					auto& element = getElement(elementPosition);
-					element.absorption = obstacle->absorption(getPosition(elementPosition), frequency).get(AbsorptionCoefficientUnit::coefficient, elementsDistance);
+					element.absorption = obstacle->absorption(getPosition(elementPosition), frequency).get(
+						AbsorptionCoefficient::Unit::coefficient, 
+						Distance(elementsDistance, Distance::Unit::m));
 
 					for (auto direction : DiscreteDirection::baseDirections())
 					{
@@ -82,7 +84,7 @@ public:
 							SignalSimulationDistortion signalDistortion(
 								distortion.normalVector,
 								distortion.distance,
-								distortion.coefficient.get(ReflectionCoefficientUnit::coefficient)
+								distortion.coefficient.get(ReflectionCoefficient::Unit::coefficient)
 							);
 
 							connection.distortion = connection.distortion + signalDistortion;

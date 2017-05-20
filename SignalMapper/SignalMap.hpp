@@ -26,14 +26,14 @@ public:
 			return Power();
 
 		double
-			signalStrength = transmitter.power.get(PowerUnit::W),
-			transmitterGain = transmitter.antenaGain.get(AntenaGainUnit::coefficient),
-			reciverGain = reciver.antenaGain.get(AntenaGainUnit::coefficient);
+			signalStrength = transmitter.power.get(Power::Unit::W),
+			transmitterGain = transmitter.antenaGain.get(AntenaGain::Unit::coefficient),
+			reciverGain = reciver.antenaGain.get(AntenaGain::Unit::coefficient);
 
 
 		double power = signalStrength * transmitterGain * reciverGain * getElement(p).signalStrangth;
 
-		return Power(power, PowerUnit::W);
+		return Power(power, Power::Unit::W);
 	}
 
 	friend SignalSimulation;

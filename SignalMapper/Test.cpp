@@ -56,8 +56,8 @@ int main()
 		);
 
 	MaterialPtr material = std::make_shared<UniformMaterial>(
-		ReflectionCoefficient(-6.24, ReflectionCoefficientUnit::dB),
-		AbsorptionCoefficient(-4.43, 0.2, AbsorptionCoefficientUnit::dB)
+		ReflectionCoefficient(-6.24, ReflectionCoefficient::Unit::dB),
+		AbsorptionCoefficient(-4.43, AbsorptionCoefficient::Unit::dB, Distance(200, Distance::Unit::mm))
 		);
 
 	std::vector<ObstaclePtr> obstacles{
@@ -67,7 +67,7 @@ int main()
 	cout << "Preparing Space" << endl;
 
 	SignalSimulationSpacePtr simulationSpace = std::make_shared<SignalSimulationSpace>(
-		Frequency(2.4, FrequencyUnit::GHz),
+		Frequency(2.4, Frequency::Unit::GHz),
 		obstacles,
 		Rectangle(-5, -5, 7, 5),
 		0.05
@@ -75,17 +75,17 @@ int main()
 
 	cout << "Space ready" << endl;
 
-	SignalSimulationParameters simulationParameters(1000, 5, Power(1e-9, PowerUnit::mW));
+	SignalSimulationParameters simulationParameters(1000, 5, Power(1e-9, Power::Unit::mW));
 	SignalSimulation simulation(simulationSpace, simulationParameters);
 
 	SignalMapPtr signalMap = simulation.simulate(Point(2, -3));
 
 	Transmitter transmitter(
-		Power(20., PowerUnit::dBm), 
-		AntenaGain(12, AntenaGainUnit::dBi)
+		Power(20., Power::Unit::dBm), 
+		AntenaGain(12, AntenaGain::Unit::dBi)
 	);
 	Reciver reciver(
-		AntenaGain(0, AntenaGainUnit::dBd)
+		AntenaGain(0, AntenaGain::Unit::dBd)
 	);
 
 	// save file
@@ -121,7 +121,7 @@ int main()
 					color = 50;
 				else
 				{
-					double signal = signalMap->getSignalStrength(transmitter, reciver, point).get(PowerUnit::dBm);
+					double signal = signalMap->getSignalStrength(transmitter, reciver, point).get(Power::Unit::dBm);
 
 					signal = (signal + 90) / 60;
 					signal = std::min(signal, 1.);
