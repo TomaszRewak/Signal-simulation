@@ -40,9 +40,10 @@ class UniformObstacle : public Obstacle
 public:
 	const SolidShapePtr shape;
 	const MaterialPtr material;
+	const Distance::Unit spaceUnit;
 
-	UniformObstacle(SolidShapePtr shape, MaterialPtr material) :
-		shape(shape), material(material)
+	UniformObstacle(SolidShapePtr shape, Distance::Unit spaceUnit, MaterialPtr material) :
+		shape(shape), spaceUnit(spaceUnit), material(material)
 	{ }
 
 	virtual AbsorptionCoefficient absorption(Point point, Frequency frequency) const

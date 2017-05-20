@@ -61,7 +61,7 @@ int main()
 		);
 
 	std::vector<ObstaclePtr> obstacles{
-		std::make_shared<UniformObstacle>(buildingShape, material)
+		std::make_shared<UniformObstacle>(buildingShape, Distance::Unit::m, material)
 	};
 
 	cout << "Preparing Space" << endl;
@@ -69,8 +69,8 @@ int main()
 	SignalSimulationSpacePtr simulationSpace = std::make_shared<SignalSimulationSpace>(
 		Frequency(2.4, Frequency::Unit::GHz),
 		obstacles,
-		Rectangle(-5, -5, 7, 5),
-		Distance(0.05, Distance::Unit::m)
+		Surface(Rectangle(-5, -5, 7, 5), Distance::Unit::m),
+		Distance(5, Distance::Unit::cm)
 	);
 
 	cout << "Space ready" << endl;

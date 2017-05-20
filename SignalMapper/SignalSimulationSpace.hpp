@@ -47,8 +47,13 @@ class SignalSimulationSpace : public UniformFiniteElementsSpace<SignalSimulation
 public:
 	const Frequency frequency;
 
-	SignalSimulationSpace(const Frequency frequency, const std::vector<ObstaclePtr>& obstacles, Rectangle spaceSize, Distance elementsDistance) :
-		UniformFiniteElementsSpace(spaceSize, elementsDistance.get(Distance::Unit::m)),
+	SignalSimulationSpace(
+		const Frequency frequency, 
+		const std::vector<ObstaclePtr>& obstacles, 
+		Surface spaceSize,
+		Distance elementsDistance
+	) :
+		UniformFiniteElementsSpace(spaceSize.get(Distance::Unit::m), elementsDistance.get(Distance::Unit::m)),
 		frequency(frequency)
 	{
 		const auto directions = DiscreteDirection::baseDirections();

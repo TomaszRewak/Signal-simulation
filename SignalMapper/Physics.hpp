@@ -9,6 +9,7 @@ public:
 	enum class Unit
 	{
 		m,
+		cm,
 		mm
 	};
 
@@ -27,6 +28,8 @@ public:
 		{
 		case Distance::Unit::m:
 			return m;
+		case Distance::Unit::cm:
+			return m * 100;
 		case Distance::Unit::mm:
 			return m * 1000;
 		}
@@ -39,10 +42,48 @@ public:
 		case Distance::Unit::m:
 			m = value;
 			break;
+		case Distance::Unit::cm:
+			m = value / 100;
+			break;
 		case Distance::Unit::mm:
 			m = value / 1000;
 			break;
 		}
+	}
+};
+
+struct Surface
+{
+protected:
+	Rectangle m;
+
+public:
+	Surface()
+	{}
+
+	Surface(Rectangle value, Distance::Unit unit)
+	{
+		set(value, unit);
+	}
+
+	Rectangle get(Distance::Unit unit)
+	{
+		return Rectangle(
+			Distance(m.minX(), Distance::Unit::m).get(unit),
+			Distance(m.minY(), Distance::Unit::m).get(unit),
+			Distance(m.maxX(), Distance::Unit::m).get(unit),
+			Distance(m.maxY(), Distance::Unit::m).get(unit)
+		);
+	}
+
+	void set(Rectangle value, Distance::Unit unit)
+	{
+		m = Rectangle(
+			Distance(value.minX(), unit).get(Distance::Unit::m),
+			Distance(value.minY(), unit).get(Distance::Unit::m),
+			Distance(value.maxX(), unit).get(Distance::Unit::m),
+			Distance(value.maxY(), unit).get(Distance::Unit::m)
+		);
 	}
 };
 
