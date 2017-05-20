@@ -113,12 +113,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Material.hpp" />
-    <ClInclude Include="SignalWaveSimulation.hpp" />
     <ClInclude Include="Obstacle.hpp" />
     <ClInclude Include="Physics.hpp" />
     <ClInclude Include="SignalMap.hpp" />
     <ClInclude Include="SignalSimulation.hpp" />
     <ClInclude Include="Math.hpp" />
+    <ClInclude Include="SimulationSpace.hpp" />
     <ClInclude Include="Transmitter.hpp" />
     <ClInclude Include="UniformFiniteElementsSpace.hpp" />
   </ItemGroup>

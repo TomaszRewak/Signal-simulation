@@ -13,10 +13,9 @@ struct SignalSimulationParameters {
 	int reflectionCount;
 	Power minimalSignalStrength;
 
-	SignalSimulationParameters(int raysCount = 100, int reflectionCount = 5, Power minimalSignalStrength = Power()) :
+	SignalSimulationParameters(int raysCount = 100, int reflectionCount = 5) :
 		raysCount(raysCount),
-		reflectionCount(reflectionCount),
-		minimalSignalStrength(minimalSignalStrength)
+		reflectionCount(reflectionCount)
 	{ }
 };
 
@@ -25,18 +24,20 @@ class SignalSimulation
 private:
 	struct Ray
 	{
-		Point source;
 		DiscretePoint position;
+
+		Position source;
+		Distance distance;
+		Distance previousDistance;
+
 		FreeVector normalVector;
 		FreeVector offset;
 
 		int reflections = 0;
-		int lastObstacle = -1;
 
-		double absorption = 0;
-		double distance = 0;
+		double absorptionCoefficient = 1;
 
-		Ray(Point source, DiscretePoint position, FreeVector normalVector, int reflections) :
+		Ray(Position source, DiscretePoint position, FreeVector normalVector, int reflections) :
 			source(source),
 			position(position),
 			normalVector(normalVector.normalized()),
@@ -44,20 +45,19 @@ private:
 		{ }
 	};
 
-	const SignalSimulationSpacePtr simulationSpace;
+	const SimulationSpacePtr simulationSpace;
 	const SignalSimulationParameters simulationParameters;
 
 public:
-	SignalSimulation(SignalSimulationSpacePtr simulationSpace, SignalSimulationParameters simulationParameters = SignalSimulationParameters()) :
+	SignalSimulation(SimulationSpacePtr simulationSpace, SignalSimulationParameters simulationParameters = SignalSimulationParameters()) :
 		simulationSpace(simulationSpace),
 		simulationParameters(simulationParameters)
 	{ }
 
-	SignalMapPtr simulate(Point transmitterPosition) const
+	SignalMapPtr simulate(Frequency frequency, Position transmitterPosition) const
 	{
+		auto distortionMap = std::make_shared<SignalDistortionConnectionSpace>(frequency, simulationSpace);
 		auto signalMap = std::make_shared<SignalMap>(simulationSpace);
-		double minimalSignalStrength = simulationParameters.minimalSignalStrength.get(Power::Unit::W);
-		double frequency = simulationSpace->frequency.get(Frequency::Unit::m);
 
 		std::vector<Ray> rays;
 
@@ -67,7 +67,7 @@ public:
 
 			Ray ray(
 				transmitterPosition,
-				signalMap->getDiscretePosition(transmitterPosition),
+				distortionMap->getDiscretePoint(transmitterPosition),
 				FreeVector(std::sin(alpha), std::cos(alpha)),
 				simulationParameters.reflectionCount
 			);
@@ -80,30 +80,38 @@ public:
 			Ray ray = *rays.rbegin();
 			rays.pop_back();
 
-			if (!simulationSpace->inRange(ray.position))
+			if (!signalMap->inRange(ray.position))
 				continue;
 
-			double distance = ray.distance + FreeVector(ray.source, simulationSpace->getPosition(ray.position)).d();
-			double strength = std::min(frequency / std::pow(4 * 3.141592653589793238463 * distance, 2), 1.) * std::pow(2.71828182846, -ray.absorption);
+			double distance = ray.distance.get(Distance::Unit::m) + FreeVector(ray.source.get(Distance::Unit::m), signalMap->getPosition(ray.position).get(Distance::Unit::m)).d();
+			double strength = std::pow(frequency.get(Frequency::Unit::m) / (4 * 3.141592653589793238463 * distance), 2) * ray.absorptionCoefficient;
 
-			if (strength < minimalSignalStrength)
-				continue;
+			strength = std::min(strength, 1.);
+
+			//if (strength < simulationParameters.minimalSignalStrength.get(Power::Unit::W))
+			//	continue;
 
 			auto& mapElement = signalMap->getElement(ray.position);
-			mapElement.signalStrangth = std::max(mapElement.signalStrangth, strength);
+			mapElement = std::max(mapElement, strength);
 
-			auto& simulationElement = simulationSpace->getElement(ray.position);
+			auto& connections = distortionMap->getElement(ray.position);
 
 			FreeVector newOffset = ray.offset + ray.normalVector;
 			DiscreteDirection direction = newOffset;
 
-			auto& connection = simulationElement.connections[direction.getIndex()];
+			auto& connection = connections[direction.getIndex()];
 
-			if (connection.distortion.coefficient > 0)
-				continue;
+			Distance distanceDiff(distance - ray.previousDistance.get(Distance::Unit::m), Distance::Unit::m);
+
+			if (connection.absorption.get(AbsorptionCoefficient::Unit::coefficient, simulationSpace->precision) != 1)
+			{
+				ray.absorptionCoefficient *= connection.absorption.get(AbsorptionCoefficient::Unit::coefficient, distanceDiff);
+			}
 
 			ray.position = ray.position + newOffset;
 			ray.offset = newOffset - direction;
+
+			ray.previousDistance = Distance(distance, Distance::Unit::m);
 
 			rays.push_back(ray);
 		}

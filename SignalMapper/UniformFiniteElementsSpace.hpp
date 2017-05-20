@@ -43,7 +43,7 @@ public:
 
 	const Element& getElement(Point point) const
 	{
-		return getElement(getDiscretePosition(point));
+		return getElement(getDiscretePoint(point));
 	}
 
 	bool inRange(DiscretePoint point) const
@@ -57,24 +57,17 @@ public:
 
 	bool inRange(Point point) const
 	{
-		return inRange(getDiscretePosition(point));
+		return inRange(getDiscretePoint(point));
 	}
 
-	Point getPosition(DiscretePoint discretePoint) const {
+	Point getPoint(DiscretePoint discretePoint) const {
 		return Point(
 			discretePoint.x * elementsDistance + bounds.minX(),
 			discretePoint.y * elementsDistance + bounds.minY()
 		);
 	}
 
-	DiscretePoint getDiscretePosition(Point point) const {
-		return DiscretePoint(
-			(int)std::floor((point.x - bounds.minX()) / elementsDistance + 0.5),
-			(int)std::floor((point.y - bounds.minY()) / elementsDistance + 0.5)
-		);
-	}
-
-	DiscretePoint getBottomDiscretePoint(Point point) const {
+	DiscretePoint getDiscretePoint(Point point) const {
 		return DiscretePoint(
 			(int)std::floor((point.x - bounds.minX()) / elementsDistance),
 			(int)std::floor((point.y - bounds.minY()) / elementsDistance)

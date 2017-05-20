@@ -25,20 +25,20 @@ int main()
 		Point(4.25, -2.5),
 		Point(4.25, -4),
 		Point(6, -4),
-		Point(6, 4),
-		Point(4.25, 4),
+		Point(6, 6),
+		Point(4.25, 6),
 		Point(4.25, -1.5),
 		Point(4, -1.5),
 		Point(4, -0.25),
 		Point(2.5, -0.25),
 		Point(2.5, 0),
 		Point(4, 0),
-		Point(4, 4),
-		Point(0, 4),
+		Point(4, 6),
+		Point(0, 6),
 		Point(0, 2.5),
 		Point(-0.25, 2.5),
-		Point(-0.25, 4),
-		Point(-4, 4),
+		Point(-0.25, 6),
+		Point(-4, 6),
 	};
 
 	std::vector<Point> exterior{
@@ -46,8 +46,8 @@ int main()
 		Point(-0.5, -0.5),
 		Point(-0.5, -4.5),
 		Point(6.5, -4.5),
-		Point(6.5, 4.5),
-		Point(-4.5, 4.5)
+		Point(6.5, 6.5),
+		Point(-4.5, 6.5)
 	};
 
 	SolidShapePtr buildingShape = std::make_shared<CSGShapesDifference>(
@@ -57,6 +57,7 @@ int main()
 
 	MaterialPtr material = std::make_shared<UniformMaterial>(
 		ReflectionCoefficient(-6.24, ReflectionCoefficient::Unit::dB),
+		//AbsorptionCoefficient(0.8, AbsorptionCoefficient::Unit::coefficient, Distance(1, Distance::Unit::m))
 		AbsorptionCoefficient(-4.43, AbsorptionCoefficient::Unit::dB, Distance(200, Distance::Unit::mm))
 		);
 
@@ -64,25 +65,37 @@ int main()
 		std::make_shared<UniformObstacle>(buildingShape, Distance::Unit::m, material)
 	};
 
-	cout << "Preparing Space" << endl;
+	cout << "Preparing building map" << endl;
 
-	SignalSimulationSpacePtr simulationSpace = std::make_shared<SignalSimulationSpace>(
-		Frequency(2.4, Frequency::Unit::GHz),
+	SimulationSpacePtr simulationSpace = std::make_shared<SimulationSpace>(
+		obstacles,
+		Surface(Rectangle(-5, -5, 7, 7), Distance::Unit::m),
+		Distance(0.05, Distance::Unit::m)
+		);
+
+	BuildingMapPtr buildingMap = std::make_shared<BuildingMap>(
+		simulationSpace
+		);
+
+	cout << "Building map ready" << endl;
+
+	/*SignalSimulationSpacePtr simulationSpace = std::make_shared<SignalSimulationSpace>(
 		obstacles,
 		Surface(Rectangle(-5, -5, 7, 5), Distance::Unit::m),
 		Distance(5, Distance::Unit::cm)
-	);
+		);*/
 
-	cout << "Space ready" << endl;
-
-	SignalSimulationParameters simulationParameters(1000, 5, Power(1e-9, Power::Unit::mW));
+	SignalSimulationParameters simulationParameters(5000, 5);
 	SignalSimulation simulation(simulationSpace, simulationParameters);
 
-	SignalMapPtr signalMap = simulation.simulate(Point(2, -3));
+	SignalMapPtr signalMap = simulation.simulate(
+		Frequency(2.4, Frequency::Unit::GHz),
+		Position(Point(2, -3), Distance::Unit::m)
+	);
 
 	Transmitter transmitter(
-		Power(20., Power::Unit::dBm), 
-		AntenaGain(12, AntenaGain::Unit::dBi)
+		Power(20., Power::Unit::dBm),
+		AntenaGain(6, AntenaGain::Unit::dBi)
 	);
 	Reciver reciver(
 		AntenaGain(0, AntenaGain::Unit::dBd)
@@ -90,7 +103,7 @@ int main()
 
 	// save file
 
-	Rectangle boundingBox = simulationSpace->bounds;
+	Rectangle boundingBox = simulationSpace->spaceSize.get(Distance::Unit::m);
 
 	size_t imageSize = 1000;
 
@@ -99,7 +112,7 @@ int main()
 	cout << "Simulation ready" << endl;
 
 	fstream file;
-	file.open("Debug/test.pgm", ios::out);
+	file.open("Release/test.pgm", ios::out);
 
 	file << "P2\n";
 	file << imageSize << ' ' << imageSize << ' ' << 256 << "\n";
@@ -108,27 +121,29 @@ int main()
 	{
 		for (size_t u = 0; u < imageSize; u++)
 		{
-			Point point(
-				boundingBox.minX() + buildingLongerSide * i / imageSize,
-				boundingBox.minY() + buildingLongerSide * u / imageSize
+			Position position(
+				Point(
+					boundingBox.minX() + buildingLongerSide * i / imageSize,
+					boundingBox.minY() + buildingLongerSide * u / imageSize
+				),
+				Distance::Unit::m
 			);
 
 			int color = 0;
 
-			if (simulationSpace->inRange(point))
+			if (buildingMap->hasObstacle(position))
+				color = 50;
+			else
 			{
-				if (simulationSpace->hasObstacle(point))
-					color = 50;
-				else
-				{
-					double signal = signalMap->getSignalStrength(transmitter, reciver, point).get(Power::Unit::dBm);
+				double signal = signalMap->getSignalStrength(position, transmitter, reciver).get(Power::Unit::dBm);
 
-					signal = (signal + 90) / 60;
-					signal = std::min(signal, 1.);
-					signal = std::max(signal, 0.);
+				// -30 (best) - -70(worst) 
+				signal = (signal + 70.) / 40.;
 
-					color = (int)(255 * signal);
-				}
+				signal = std::max(signal, 0.);
+				signal = std::min(signal, 1.);
+
+				color = (int)(255 * signal);
 			}
 
 			file << color << ' ';

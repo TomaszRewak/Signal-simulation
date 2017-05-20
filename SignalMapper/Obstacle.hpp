@@ -30,8 +30,9 @@ struct ObstacleDistortion
 class Obstacle 
 {
 public:
-	virtual AbsorptionCoefficient absorption(Point point, Frequency frequency) const = 0;
-	virtual std::vector<ObstacleDistortion> distortion(Vector vector, Frequency frequency) const = 0;
+	virtual bool inside(Position position) const = 0;
+	virtual AbsorptionCoefficient absorption(Position position, Frequency frequency) const = 0;
+	virtual std::vector<ObstacleDistortion> distortion(Position begin, Position end, Frequency frequency) const = 0;
 };
 using ObstaclePtr = std::shared_ptr<const Obstacle>;
 
@@ -39,23 +40,33 @@ class UniformObstacle : public Obstacle
 {
 public:
 	const SolidShapePtr shape;
-	const MaterialPtr material;
 	const Distance::Unit spaceUnit;
+	const MaterialPtr material;
 
 	UniformObstacle(SolidShapePtr shape, Distance::Unit spaceUnit, MaterialPtr material) :
 		shape(shape), spaceUnit(spaceUnit), material(material)
 	{ }
 
-	virtual AbsorptionCoefficient absorption(Point point, Frequency frequency) const
+	virtual bool inside(Position position) const
 	{
-		if (shape->contains(point))
+		return shape->contains(position.get(spaceUnit));
+	}
+
+	virtual AbsorptionCoefficient absorption(Position position, Frequency frequency) const
+	{
+		if (shape->contains(position.get(spaceUnit)))
 			return material->absorption(frequency);
 		else
 			return AbsorptionCoefficient();
 	}
 
-	virtual std::vector<ObstacleDistortion> distortion(Vector vector, Frequency frequency) const
+	virtual std::vector<ObstacleDistortion> distortion(Position begin, Position end, Frequency frequency) const
 	{
+		Vector vector(
+			begin.get(spaceUnit),
+			end.get(spaceUnit)
+		);
+
 		std::vector<ObstacleDistortion> distortions;
 
 		for (const auto& intersection : shape->intersections(vector))

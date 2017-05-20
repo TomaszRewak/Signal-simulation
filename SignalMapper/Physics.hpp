@@ -22,7 +22,7 @@ public:
 		set(value, unit);
 	}
 
-	double get(Unit unit)
+	double get(Unit unit) const
 	{
 		switch (unit)
 		{
@@ -52,6 +52,37 @@ public:
 	}
 };
 
+struct Position
+{
+protected:
+	Point m;
+
+public:
+	Position()
+	{ }
+
+	Position(Point value, Distance::Unit unit)
+	{
+		set(value, unit);
+	}
+
+	Point get(Distance::Unit unit)
+	{
+		return Point(
+			Distance(m.x, Distance::Unit::m).get(unit),
+			Distance(m.y, Distance::Unit::m).get(unit)
+		);
+	}
+
+	void set(Point value, Distance::Unit unit)
+	{
+		m = Point(
+			Distance(value.x, unit).get(Distance::Unit::m),
+			Distance(value.y, unit).get(Distance::Unit::m)
+		);
+	}
+};
+
 struct Surface
 {
 protected:
@@ -66,7 +97,7 @@ public:
 		set(value, unit);
 	}
 
-	Rectangle get(Distance::Unit unit)
+	Rectangle get(Distance::Unit unit) const
 	{
 		return Rectangle(
 			Distance(m.minX(), Distance::Unit::m).get(unit),
@@ -131,7 +162,7 @@ public:
 			mW = value;
 			break;
 		case Unit::W:
-			set(value / 1000, Unit::mW);
+			set(value * 1000, Unit::mW);
 			break;
 		case Unit::dBm:
 			mW = std::pow(10.0, value / 10.0);
