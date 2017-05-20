@@ -6,19 +6,19 @@
 #include <limits>
 #include <memory>
 
-struct Shape
+struct SolidShape
 {
 	virtual bool contains(Point point) const = 0;
 	virtual std::vector<Intersection> intersections(Vector ray) const = 0;
 };
-using ShapePtr = std::shared_ptr<const Shape>;
+using SolidShapePtr = std::shared_ptr<const SolidShape>;
 
-class CSGShape : public Shape
+class CSGShape : public SolidShape
 {
 
 };
 
-struct Polygon : public Shape
+struct Polygon : public SolidShape
 {
 private:
 	Rectangle bounds;
@@ -100,10 +100,10 @@ public:
 
 struct CSGShapesDifference : public CSGShape
 {
-	const ShapePtr shapeA;
-	const ShapePtr shapeB;
+	const SolidShapePtr shapeA;
+	const SolidShapePtr shapeB;
 
-	CSGShapesDifference(ShapePtr shapeA, ShapePtr shapeB) :
+	CSGShapesDifference(SolidShapePtr shapeA, SolidShapePtr shapeB) :
 		shapeA(shapeA), shapeB(shapeB)
 	{ }
 

@@ -50,7 +50,7 @@ int main()
 		Point(-4.5, 4.5)
 	};
 
-	ShapePtr buildingShape = std::make_shared<CSGShapesDifference>(
+	SolidShapePtr buildingShape = std::make_shared<CSGShapesDifference>(
 		std::make_shared<Polygon>(exterior),
 		std::make_shared<Polygon>(interior)
 		);

@@ -38,10 +38,10 @@ using ObstaclePtr = std::shared_ptr<const Obstacle>;
 class UniformObstacle : public Obstacle
 {
 public:
-	const ShapePtr shape;
+	const SolidShapePtr shape;
 	const MaterialPtr material;
 
-	UniformObstacle(ShapePtr shape, MaterialPtr material) :
+	UniformObstacle(SolidShapePtr shape, MaterialPtr material) :
 		shape(shape), material(material)
 	{ }
 
