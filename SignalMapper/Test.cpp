@@ -70,7 +70,7 @@ int main()
 		Frequency(2.4, Frequency::Unit::GHz),
 		obstacles,
 		Rectangle(-5, -5, 7, 5),
-		0.05
+		Distance(0.05, Distance::Unit::m)
 	);
 
 	cout << "Space ready" << endl;

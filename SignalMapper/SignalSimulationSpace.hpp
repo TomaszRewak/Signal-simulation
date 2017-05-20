@@ -47,8 +47,8 @@ class SignalSimulationSpace : public UniformFiniteElementsSpace<SignalSimulation
 public:
 	const Frequency frequency;
 
-	SignalSimulationSpace(const Frequency frequency, const std::vector<ObstaclePtr>& obstacles, Rectangle spaceSize, double elementsDistance) :
-		UniformFiniteElementsSpace(spaceSize, elementsDistance),
+	SignalSimulationSpace(const Frequency frequency, const std::vector<ObstaclePtr>& obstacles, Rectangle spaceSize, Distance elementsDistance) :
+		UniformFiniteElementsSpace(spaceSize, elementsDistance.get(Distance::Unit::m)),
 		frequency(frequency)
 	{
 		const auto directions = DiscreteDirection::baseDirections();
@@ -64,7 +64,7 @@ public:
 					auto& element = getElement(elementPosition);
 					element.absorption = obstacle->absorption(getPosition(elementPosition), frequency).get(
 						AbsorptionCoefficient::Unit::coefficient, 
-						Distance(elementsDistance, Distance::Unit::m));
+						elementsDistance);
 
 					for (auto direction : DiscreteDirection::baseDirections())
 					{
