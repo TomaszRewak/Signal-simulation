@@ -48,15 +48,26 @@ public:
 };
 using BuildingMapPtr = std::shared_ptr<const BuildingMap>;
 
-class SignalMap : protected SimulationUniformFiniteElementsSpace<double>
+class SignalMap : protected SimulationUniformFiniteElementsSpace<PowerCoefficient>
 {
+private:
+	PowerCoefficient getSignalStrength(DiscretePoint position, const Transmitter& transmitter, const Reciver& reciver) const
+	{
+		position.x = std::max(position.x, 0);
+		position.y = std::max(position.y, 0);
+		position.x = std::min(position.x, resolution.width);
+		position.y = std::min(position.y, resolution.height);
+
+		return getElement(position);
+	}
+
 public:
 	SignalMap(SimulationSpacePtr simulationSpace) :
 		SimulationUniformFiniteElementsSpace(simulationSpace)
 	{
 		for (int x = 0; x < resolution.width; x++)
 			for (int y = 0; y < resolution.height; y++)
-				getElement(DiscretePoint(x, y)) = 0;
+				getElement(DiscretePoint(x, y)) = PowerCoefficient(0, PowerCoefficient::Unit::coefficient);
 	}
 
 	Power getSignalStrength(Position position, const Transmitter& transmitter, const Reciver& reciver) const
@@ -64,15 +75,28 @@ public:
 		if (!inRange(position))
 			return Power();
 
-		double
-			signalStrength = transmitter.power.get(Power::Unit::mW),
-			transmitterGain = transmitter.antenaGain.get(AntenaGain::Unit::coefficient),
-			reciverGain = reciver.antenaGain.get(AntenaGain::Unit::coefficient);
+		DiscretePoint point = getDiscretePoint(position);
 
+		DiscretePoint points[]{
+			point,
+			point + DiscreteDirection(1, 0),
+			point + DiscreteDirection(1, 0) + DiscreteDirection(0, 1),
+			point + DiscreteDirection(0, 1),
+		};
 
-		double power = signalStrength * transmitterGain * reciverGain * getElement(position);
+		double db = 0;
 
-		return Power(power, Power::Unit::mW);
+		for (auto p : points)
+		{
+			auto pPosition = getPosition(p);
+
+			db +=
+				getSignalStrength(p, transmitter, reciver).get(PowerCoefficient::Unit::dB) *
+				(1 - std::abs(getPoint(pPosition).x - getPoint(position).x) / elementsDistance) *
+				(1 - std::abs(getPoint(pPosition).y - getPoint(position).y) / elementsDistance);
+		}
+
+		return transmitter.power * transmitter.antenaGain * reciver.antenaGain * PowerCoefficient(db, PowerCoefficient::Unit::dB);
 	}
 
 	friend SignalSimulation;

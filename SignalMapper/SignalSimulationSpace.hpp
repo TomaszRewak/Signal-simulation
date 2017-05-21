@@ -10,7 +10,7 @@
 struct SignalSimulationDistortion
 {
 	AbsorptionCoefficient absorption;
-	ReflectionCoefficient reflection;
+	ObstacleDistortion reflection;
 
 	SignalSimulationDistortion()
 	{}
@@ -33,79 +33,26 @@ public:
 			{
 				for (int y = 0; y < resolution.height; y++)
 				{
-					DiscretePoint elementDiscretePosition(x, y);
-					Position elementPosition = getPosition(elementDiscretePosition);
+					DiscretePoint firstDiscretePosition(x, y);
+					Position firstPosition = getPosition(firstDiscretePosition);
 
-					auto& element = getElement(elementDiscretePosition);
-					auto absorption = obstacle->absorption(elementPosition, frequency);
+					auto& element = getElement(firstDiscretePosition);
 
-					if (absorption.get(AbsorptionCoefficient::Unit::coefficient, Distance(1, Distance::Unit::m)) < 1)
-						for (int i = 0; i < 4; i++)
-							element[i].absorption = absorption;
+					for (int i = 0; i < directions.size(); i++)
+					{
+						DiscretePoint secondDiscretePosition = firstDiscretePosition + directions[i];
+						Position secondPosition = getPosition(secondDiscretePosition);
+
+						auto& connection = element[i];
+
+						auto absorption = obstacle->absorption(firstPosition, secondPosition, frequency);
+						connection.absorption = connection.absorption + absorption;
+
+						auto distortion = obstacle->distortion(firstPosition, secondPosition, frequency);
+						connection.reflection = connection.reflection + distortion;
+					}
 				}
 			}
 		}
 	}
 };
-
-//struct SignalSimulationElement
-//{
-//	MaterialPtr absorption;
-//	std::array<SignalSimulationConnection, 4> connections;
-//};
-//
-//class SignalSimulationSpace : public UniformFiniteElementsSpace<SignalSimulationElement>
-//{
-//public:
-//	const Distance::Unit spaceUnit = Distance::Unit::m;
-//
-//	SignalSimulationSpace(
-//		Frequency frequency,
-//		const SimulationSpace& simulationSpace,
-//		Distance elementsDistance
-//	) :
-//		UniformFiniteElementsSpace(spaceSize.get(spaceUnit), elementsDistance.get(spaceUnit))
-//	{
-//		const auto directions = DiscreteDirection::baseDirections();
-//
-//		for (const auto& obstacle : obstacles)
-//		{
-//			for (int x = 0; x < resolution.width; x++)
-//			{
-//				for (int y = 0; y < resolution.height; y++)
-//				{
-//					DiscretePoint elementDiscretePosition(x, y);
-//					Position elementPosition(getPosition(elementDiscretePosition), spaceUnit);
-//
-//					auto& element = getElement(elementDiscretePosition);
-//					element.absorption = obstacle->absorption(elementPosition, frequency).get(
-//						AbsorptionCoefficient::Unit::coefficient,
-//						elementsDistance);
-//
-//					for (auto direction : DiscreteDirection::baseDirections())
-//					{
-//						DiscretePoint connectedElementDiscretePosition = elementDiscretePosition + direction;
-//						Position connectedElementPosition(getPosition(connectedElementDiscretePosition), spaceUnit);
-//
-//						auto& connection = getElement(elementDiscretePosition).connections[direction.getIndex()];
-//						auto distortions = obstacle->distortion(elementPosition, connectedElementPosition, frequency);
-//
-//						std::sort(distortions.begin(), distortions.end());
-//
-//						for (const auto& distortion : distortions)
-//						{
-//							SignalSimulationDistortion signalDistortion(
-//								distortion.normalVector,
-//								distortion.distance,
-//								distortion.coefficient.get(ReflectionCoefficient::Unit::coefficient)
-//							);
-//
-//							connection.distortion = connection.distortion + signalDistortion;
-//						}
-//					}
-//				}
-//			}
-//		}
-//	}
-//};
-//using SignalSimulationSpacePtr = std::shared_ptr<const SignalSimulationSpace>;

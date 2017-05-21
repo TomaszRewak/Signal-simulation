@@ -11,7 +11,6 @@
 struct SignalSimulationParameters {
 	int raysCount;
 	int reflectionCount;
-	Power minimalSignalStrength;
 
 	SignalSimulationParameters(int raysCount = 100, int reflectionCount = 5) :
 		raysCount(raysCount),
@@ -35,13 +34,14 @@ private:
 
 		int reflections = 0;
 
-		double absorptionCoefficient = 1;
+		PowerCoefficient powerCoefficient;
 
 		Ray(Position source, DiscretePoint position, FreeVector normalVector, int reflections) :
 			source(source),
 			position(position),
 			normalVector(normalVector.normalized()),
-			reflections(reflections)
+			reflections(reflections),
+			powerCoefficient(1, PowerCoefficient::Unit::coefficient)
 		{ }
 	};
 
@@ -83,16 +83,12 @@ public:
 			if (!signalMap->inRange(ray.position))
 				continue;
 
-			double distance = ray.distance.get(Distance::Unit::m) + FreeVector(ray.source.get(Distance::Unit::m), signalMap->getPosition(ray.position).get(Distance::Unit::m)).d();
-			double strength = std::pow(frequency.get(Frequency::Unit::m) / (4 * 3.141592653589793238463 * distance), 2) * ray.absorptionCoefficient;
-
-			strength = std::min(strength, 1.);
-
-			//if (strength < simulationParameters.minimalSignalStrength.get(Power::Unit::W))
-			//	continue;
+			Distance distance = ray.distance + ray.source.distanceTo(signalMap->getPosition(ray.position));
+			PowerCoefficient strength = ray.powerCoefficient * std::pow(frequency / (distance * 4 * 3.141592653589793238463), 2);
 
 			auto& mapElement = signalMap->getElement(ray.position);
-			mapElement = std::max(mapElement, strength);
+			if (mapElement < strength)
+				mapElement = strength;
 
 			auto& connections = distortionMap->getElement(ray.position);
 
@@ -101,17 +97,30 @@ public:
 
 			auto& connection = connections[direction.getIndex()];
 
-			Distance distanceDiff(distance - ray.previousDistance.get(Distance::Unit::m), Distance::Unit::m);
+			Distance distanceDiff = distance - ray.previousDistance;
+
+			if (ray.reflections > 0 && connection.reflection.coefficient.get(PowerCoefficient::Unit::coefficient) != 0)
+			{
+				Ray reflectedRay = ray;
+				reflectedRay.reflections--;
+				reflectedRay.normalVector = ray.normalVector.reflectedBy(connection.reflection.normalVector).normalized();
+				reflectedRay.offset = reflectedRay.offset.reflectedBy(connection.reflection.normalVector);
+				reflectedRay.powerCoefficient = ray.powerCoefficient * connection.reflection.coefficient;
+				reflectedRay.distance = reflectedRay.distance + distance;
+				reflectedRay.previousDistance = Distance();
+				reflectedRay.source = signalMap->getPosition(reflectedRay.position);
+				rays.push_back(reflectedRay);
+			}
 
 			if (connection.absorption.get(AbsorptionCoefficient::Unit::coefficient, simulationSpace->precision) != 1)
 			{
-				ray.absorptionCoefficient *= connection.absorption.get(AbsorptionCoefficient::Unit::coefficient, distanceDiff);
+				ray.powerCoefficient = ray.powerCoefficient * connection.absorption.get(AbsorptionCoefficient::Unit::coefficient, distanceDiff);
 			}
 
 			ray.position = ray.position + newOffset;
 			ray.offset = newOffset - direction;
 
-			ray.previousDistance = Distance(distance, Distance::Unit::m);
+			ray.previousDistance = distance;
 
 			rays.push_back(ray);
 		}

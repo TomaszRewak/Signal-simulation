@@ -210,7 +210,7 @@ public:
 		else
 		{
 			intersecting = true;
-			inRange = t < 1;
+			inRange = t <= 1;
 			position = Point(x, y);
 			normalVector = obstacle.normalVector();
 			distance = ray.freeVector.d() * t;

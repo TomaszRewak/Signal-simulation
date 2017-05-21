@@ -56,7 +56,8 @@ int main()
 		);
 
 	MaterialPtr material = std::make_shared<UniformMaterial>(
-		ReflectionCoefficient(-6.24, ReflectionCoefficient::Unit::dB),
+		//PowerCoefficient(0.8, PowerCoefficient::Unit::coefficient),
+		PowerCoefficient(-6.24, PowerCoefficient::Unit::dB),
 		//AbsorptionCoefficient(0.8, AbsorptionCoefficient::Unit::coefficient, Distance(1, Distance::Unit::m))
 		AbsorptionCoefficient(-4.43, AbsorptionCoefficient::Unit::dB, Distance(200, Distance::Unit::mm))
 		);
@@ -70,7 +71,7 @@ int main()
 	SimulationSpacePtr simulationSpace = std::make_shared<SimulationSpace>(
 		obstacles,
 		Surface(Rectangle(-5, -5, 7, 7), Distance::Unit::m),
-		Distance(0.05, Distance::Unit::m)
+		Distance(0.1, Distance::Unit::m)
 		);
 
 	BuildingMapPtr buildingMap = std::make_shared<BuildingMap>(
@@ -85,7 +86,7 @@ int main()
 		Distance(5, Distance::Unit::cm)
 		);*/
 
-	SignalSimulationParameters simulationParameters(5000, 5);
+	SignalSimulationParameters simulationParameters(5000, 3);
 	SignalSimulation simulation(simulationSpace, simulationParameters);
 
 	SignalMapPtr signalMap = simulation.simulate(
