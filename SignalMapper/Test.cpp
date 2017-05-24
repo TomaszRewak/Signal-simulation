@@ -56,22 +56,20 @@ int main()
 		);
 
 	MaterialPtr material = std::make_shared<UniformMaterial>(
-		//PowerCoefficient(0.8, PowerCoefficient::Unit::coefficient),
-		PowerCoefficient(-6.24, PowerCoefficient::Unit::dB),
-		//AbsorptionCoefficient(0.8, AbsorptionCoefficient::Unit::coefficient, Distance(1, Distance::Unit::m))
-		AbsorptionCoefficient(-4.43, AbsorptionCoefficient::Unit::dB, Distance(200, Distance::Unit::mm))
+		PowerCoefficient::in<PowerCoefficient::Unit::dB>(-6.24),
+		AbsorptionCoefficient::in<AbsorptionCoefficient::Unit::dB>(-4.43, Distance::in<Distance::Unit::mm>(200))
 		);
 
 	std::vector<ObstaclePtr> obstacles{
-		std::make_shared<UniformObstacle>(buildingShape, Distance::Unit::m, material)
+		std::make_shared<UniformObstacle<Distance::Unit::m>>(buildingShape, material)
 	};
 
 	cout << "Preparing building map" << endl;
 
 	SimulationSpacePtr simulationSpace = std::make_shared<SimulationSpace>(
 		obstacles,
-		Surface(Rectangle(-5, -5, 7, 7), Distance::Unit::m),
-		Distance(0.1, Distance::Unit::m)
+		Surface::in<Distance::Unit::m>(Rectangle(-5, -5, 7, 7)),
+		Distance::in<Distance::Unit::m>(0.1)
 		);
 
 	BuildingMapPtr buildingMap = std::make_shared<BuildingMap>(
@@ -90,21 +88,21 @@ int main()
 	SignalSimulation simulation(simulationSpace, simulationParameters);
 
 	SignalMapPtr signalMap = simulation.simulate(
-		Frequency(2.4, Frequency::Unit::GHz),
-		Position(Point(2, -3), Distance::Unit::m)
+		Frequency::in<Frequency::Unit::GHz>(2.4),
+		Position::in<Distance::Unit::m>(Point(2, -3))
 	);
 
 	Transmitter transmitter(
-		Power(20., Power::Unit::dBm),
-		AntenaGain(6, AntenaGain::Unit::dBi)
+		Power::in<Power::Unit::dBm>(20.),
+		AntenaGain::in<AntenaGain::Unit::dBi>(6)
 	);
 	Reciver reciver(
-		AntenaGain(0, AntenaGain::Unit::dBd)
+		AntenaGain::in<AntenaGain::Unit::dBd>(0)
 	);
 
 	// save file
 
-	Rectangle boundingBox = simulationSpace->spaceSize.get(Distance::Unit::m);
+	Rectangle boundingBox = simulationSpace->spaceSize.get<Distance::Unit::m>();
 
 	size_t imageSize = 1000;
 
@@ -122,12 +120,11 @@ int main()
 	{
 		for (size_t u = 0; u < imageSize; u++)
 		{
-			Position position(
+			Position position = Position::in<Distance::Unit::m>(
 				Point(
 					boundingBox.minX() + buildingLongerSide * i / imageSize,
 					boundingBox.minY() + buildingLongerSide * u / imageSize
-				),
-				Distance::Unit::m
+				)
 			);
 
 			int color = 0;
@@ -136,7 +133,7 @@ int main()
 				color = 50;
 			else
 			{
-				double signal = signalMap->getSignalStrength(position, transmitter, reciver).get(Power::Unit::dBm);
+				double signal = signalMap->getSignalStrength(position, transmitter, reciver).get<Power::Unit::dBm>();
 
 				// -30 (best) - -70(worst) 
 				signal = (signal + 70.) / 40.;

@@ -165,6 +165,12 @@ struct Intersection
 	double distance;
 
 	bool operator<(const Intersection& second) const { return distance < second.distance; }
+
+	Intersection operator-() const {
+		Intersection result = *this;
+		result.normalVector = -result.normalVector;
+		return result;
+	}
 };
 
 struct LineIntersection : public Intersection

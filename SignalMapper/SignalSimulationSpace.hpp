@@ -23,7 +23,7 @@ public:
 		Frequency frequency,
 		SimulationSpacePtr simulationSpace
 	) :
-		ConnectionsSpace(simulationSpace)
+		ConnectionsSpace(simulationSpace->spaceSize, simulationSpace->precision)
 	{
 		const auto directions = DiscreteDirection::baseDirections();
 

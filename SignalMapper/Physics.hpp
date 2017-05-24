@@ -1,6 +1,6 @@
 #pragma once
 
-struct Distance 
+struct Distance
 {
 protected:
 	double m;
@@ -17,60 +17,55 @@ public:
 		m(0)
 	{ }
 
-	Distance(double value, Unit unit)
-	{
-		set(value, unit);
-	}
+	explicit Distance(double m) :
+		m(m)
+	{ }
 
-	double get(Unit unit) const
+	template<Unit U>
+	static Distance in(double value)
 	{
-		switch (unit)
-		{
-		case Distance::Unit::m:
-			return m;
-		case Distance::Unit::cm:
-			return m * 100;
-		case Distance::Unit::mm:
-			return m * 1000;
-		}
-	}
-
-	void set(double value, Unit unit)
-	{
-		switch (unit)
-		{
-		case Distance::Unit::m:
-			m = value;
-			break;
-		case Distance::Unit::cm:
-			m = value / 100;
-			break;
-		case Distance::Unit::mm:
-			m = value / 1000;
-			break;
-		}
-	}
-
-	Distance operator+(const Distance& second) const {
 		Distance d;
-		d.m = m + second.m;
-		return d;
-	}
-	
-	Distance operator-(const Distance& second) const {
-		Distance d;
-		d.m = m - second.m;
+		d.set<U>(value);
 		return d;
 	}
 
-	double operator/(const Distance& second) const {
-		return m / second.m;
+	template<Unit U>
+	double get() const = 0;
+	template<>
+	double get<Unit::m>() const { return m; }
+	template<>
+	double get<Unit::cm>() const { return m * 100; }
+	template<>
+	double get<Unit::mm>() const { return m * 1000; }
+
+	template<Unit U>
+	void set(double value) = 0;
+	template<>
+	void set<Unit::m>(double value) { m = value; }
+	template<>
+	void set<Unit::cm>(double value) { m = value / 100; }
+	template<>
+	void set<Unit::mm>(double value) { m = value / 1000; }
+
+	friend Distance operator+(const Distance& a, const Distance& b) {
+		return Distance(a.m + b.m);
 	}
 
-	Distance operator*(double by) const {
-		Distance d;
-		d.m = m * by;
-		return d;
+	friend Distance operator-(const Distance& a, const Distance& b) {
+		return Distance(a.m - b.m);
+	}
+
+	friend double operator/(const Distance& a, const Distance& b) {
+		return a.m / b.m;
+	}
+
+	friend Distance operator*(const Distance& distance, double by) {
+		return Distance(distance.m * by);
+	}
+
+	friend Distance abs(const Distance& distance)
+	{
+		return Distance(std::abs(distance.m));
 	}
 };
 
@@ -83,31 +78,56 @@ public:
 	Position()
 	{ }
 
-	Position(Point value, Distance::Unit unit)
+	explicit Position(Point m) :
+		m(m)
+	{ }
+
+	Position(const Distance& x, const Distance& y)
 	{
-		set(value, unit);
+		m.x = x.get<Distance::Unit::m>();
+		m.y = y.get<Distance::Unit::m>();
 	}
 
-	Point get(Distance::Unit unit)
+	template<Distance::Unit U>
+	static Position in(Point value)
+	{
+		Position p;
+		p.set<U>(value);
+		return p;
+	}
+
+	template<Distance::Unit U>
+	Point get() const
 	{
 		return Point(
-			Distance(m.x, Distance::Unit::m).get(unit),
-			Distance(m.y, Distance::Unit::m).get(unit)
+			Distance::in<Distance::Unit::m>(m.x).get<U>(),
+			Distance::in<Distance::Unit::m>(m.y).get<U>()
 		);
 	}
 
-	void set(Point value, Distance::Unit unit)
+	template<Distance::Unit U>
+	void set(Point value)
 	{
 		m = Point(
-			Distance(value.x, unit).get(Distance::Unit::m),
-			Distance(value.y, unit).get(Distance::Unit::m)
+			Distance::in<U>(value.x).get<Distance::Unit::m>(),
+			Distance::in<U>(value.y).get<Distance::Unit::m>()
 		);
 	}
 
-	Distance distanceTo(const Position& second)
+	Distance distanceTo(const Position& second) const
 	{
-		return Distance(FreeVector(m, second.m).d(), Distance::Unit::m);
+		return Distance::in<Distance::Unit::m>(FreeVector(m, second.m).d());
 	}
+
+	friend Point operator/(const Position& position, const Distance& by) {
+		return Point(
+			position.m.x / by.get<Distance::Unit::m>(),
+			position.m.y / by.get<Distance::Unit::m>()
+		);
+	}
+
+	Distance x() const { return Distance::in<Distance::Unit::m>(m.x); }
+	Distance y() const { return Distance::in<Distance::Unit::m>(m.y); }
 };
 
 struct Surface
@@ -119,30 +139,44 @@ public:
 	Surface()
 	{}
 
-	Surface(Rectangle value, Distance::Unit unit)
+	explicit Surface(Rectangle m) :
+		m(m)
+	{ }
+
+	template<Distance::Unit U>
+	static Surface in(Rectangle value)
 	{
-		set(value, unit);
+		Surface s;
+		s.set<U>(value);
+		return s;
 	}
 
-	Rectangle get(Distance::Unit unit) const
+	template<Distance::Unit U>
+	Rectangle get() const
 	{
 		return Rectangle(
-			Distance(m.minX(), Distance::Unit::m).get(unit),
-			Distance(m.minY(), Distance::Unit::m).get(unit),
-			Distance(m.maxX(), Distance::Unit::m).get(unit),
-			Distance(m.maxY(), Distance::Unit::m).get(unit)
+			Distance::in<Distance::Unit::m>(m.minX()).get<U>(),
+			Distance::in<Distance::Unit::m>(m.minY()).get<U>(),
+			Distance::in<Distance::Unit::m>(m.maxX()).get<U>(),
+			Distance::in<Distance::Unit::m>(m.maxY()).get<U>()
 		);
 	}
 
-	void set(Rectangle value, Distance::Unit unit)
+	template<Distance::Unit U>
+	void set(Rectangle value)
 	{
 		m = Rectangle(
-			Distance(value.minX(), unit).get(Distance::Unit::m),
-			Distance(value.minY(), unit).get(Distance::Unit::m),
-			Distance(value.maxX(), unit).get(Distance::Unit::m),
-			Distance(value.maxY(), unit).get(Distance::Unit::m)
+			Distance::in<U>(value.minX()).get<Distance::Unit::m>(),
+			Distance::in<U>(value.minY()).get<Distance::Unit::m>(),
+			Distance::in<U>(value.maxX()).get<Distance::Unit::m>(),
+			Distance::in<U>(value.maxY()).get<Distance::Unit::m>()
 		);
 	}
+
+	Distance minX() const { return Distance::in<Distance::Unit::m>(m.minX()); }
+	Distance minY() const { return Distance::in<Distance::Unit::m>(m.minY()); }
+	Distance maxX() const { return Distance::in<Distance::Unit::m>(m.maxX()); }
+	Distance maxY() const { return Distance::in<Distance::Unit::m>(m.maxY()); }
 };
 
 struct Frequency {
@@ -159,37 +193,34 @@ public:
 		meters(0)
 	{ }
 
-	Frequency(double value, Unit unit)
+	Frequency(double meters) :
+		meters(meters)
+	{ }
+
+	template<Unit U>
+	static Frequency in(double value)
 	{
-		set(value, unit);
+		Frequency f;
+		f.set<U>(value);
+		return f;
 	}
 
-	double get(Unit unit) const
-	{
-		switch (unit)
-		{
-		case Unit::m:
-			return meters;
-		case Unit::GHz:
-			return 0.299792458 / meters;
-		}
-	}
+	template<Unit U>
+	double get() const = 0;
+	template<>
+	double get<Unit::m>() const { return meters; };
+	template<>
+	double get<Unit::GHz>() const { return 0.299792458 / meters; };
 
-	void set(double value, Unit unit)
-	{
-		switch (unit)
-		{
-		case Unit::m:
-			meters = value;
-			break;
-		case Unit::GHz:
-			meters = 0.299792458 / value;
-			break;
-		}
-	}
+	template<Unit U>
+	void set(double value) = 0;
+	template<>
+	void set<Unit::m>(double value) { meters = value; };
+	template<>
+	void set<Unit::GHz>(double value) { meters = 0.299792458 / value; };
 
-	double operator/(const Distance& second) const {
-		return meters / second.get(Distance::Unit::m);
+	friend double operator/(const Frequency& frequency, const Distance& distance) {
+		return frequency.meters / distance.get<Distance::Unit::m>();
 	}
 };
 
@@ -209,59 +240,51 @@ public:
 		alpha(0)
 	{ }
 
-	AbsorptionCoefficient(double value, Unit unit, Distance thickness)
+	explicit AbsorptionCoefficient(double alpha) :
+		alpha(alpha)
+	{ }
+
+	template<Unit U>
+	static AbsorptionCoefficient in(double value, Distance thickness)
 	{
-		set(value, unit, thickness);
+		AbsorptionCoefficient c;
+		c.set<U>(value, thickness);
+		return c;
 	}
 
-	double get(Unit unit, Distance thickness) const
+	template<Unit U>
+	double get(Distance thickness) const = 0;
+	template<>
+	double get<Unit::alpha>(Distance thickness) const { return alpha * thickness.get<Distance::Unit::m>(); }
+	template<>
+	double get<Unit::dB>(Distance thickness) const { return 10 * std::log10(get<Unit::coefficient>(thickness)); }
+	template<>
+	double get<Unit::coefficient>(Distance thickness) const { return std::exp(-get<Unit::alpha>(thickness)); }
+
+	template<Unit T>
+	void set(double value, Distance thickness) = 0;
+	template<>
+	void set<Unit::alpha>(double value, Distance thickness) { alpha = value / thickness.get<Distance::Unit::m>(); }
+	template<>
+	void set<Unit::dB>(double value, Distance thickness) { set<Unit::coefficient>(std::pow(10.0, value / 10.0), thickness); }
+	template<>
+	void set<Unit::coefficient>(double value, Distance thickness) { set<Unit::alpha>(-std::log(value), thickness); }
+
+	bool affects() { return alpha != 0; }
+
+	friend AbsorptionCoefficient operator+(const AbsorptionCoefficient& a, const AbsorptionCoefficient& b)
 	{
-		switch (unit)
-		{
-		case Unit::alpha:
-			return alpha * thickness.get(Distance::Unit::m);
-		case Unit::dB:
-			return 10 * std::log10(get(Unit::coefficient, thickness));
-		case Unit::coefficient:
-			return std::exp(-get(Unit::alpha, thickness));
-		}
+		return AbsorptionCoefficient(a.alpha + b.alpha);
 	}
 
-	void set(double value, Unit unit, Distance thickness)
+	friend AbsorptionCoefficient operator-(const AbsorptionCoefficient& a, const AbsorptionCoefficient& b)
 	{
-		switch (unit)
-		{
-		case Unit::alpha:
-			alpha = value / thickness.get(Distance::Unit::m);
-			break;
-		case Unit::dB:
-			set(std::pow(10.0, value / 10.0), Unit::coefficient, thickness);
-			break;
-		case Unit::coefficient:
-			set(-std::log(value), Unit::alpha, thickness);
-			break;
-		}
+		return AbsorptionCoefficient(a.alpha - b.alpha);
 	}
 
-	AbsorptionCoefficient operator+(const AbsorptionCoefficient& second) const
+	friend AbsorptionCoefficient operator*(const AbsorptionCoefficient& a, double by)
 	{
-		AbsorptionCoefficient absorption;
-		absorption.alpha = alpha + second.alpha;
-		return absorption;
-	}
-
-	AbsorptionCoefficient operator-(const AbsorptionCoefficient& second) const
-	{
-		AbsorptionCoefficient absorption;
-		absorption.alpha = alpha - second.alpha;
-		return absorption;
-	}
-
-	AbsorptionCoefficient operator*(double by) const
-	{
-		AbsorptionCoefficient absorption;
-		absorption.alpha = alpha * by;
-		return absorption;
+		return AbsorptionCoefficient(a.alpha * by);
 	}
 };
 
@@ -276,53 +299,44 @@ public:
 		dB
 	};
 
-	PowerCoefficient(double value) :
-		coefficient(value)
-	{ }
-
 	PowerCoefficient() :
 		coefficient(0)
 	{ }
 
-	PowerCoefficient(double value, Unit unit)
+	PowerCoefficient(double coefficient) :
+		coefficient(coefficient)
+	{ }
+
+	template<Unit U>
+	static PowerCoefficient in(double value)
 	{
-		set(value, unit);
+		PowerCoefficient c;
+		c.set<U>(value);
+		return c;
 	}
 
-	double get(Unit unit) const
-	{
-		switch (unit)
-		{
-		case Unit::coefficient:
-			return coefficient;
-		case Unit::dB:
-			return 10 * std::log10(coefficient);
-		}
-	}
+	template<Unit U>
+	double get() const = 0;
+	template<>
+	double get<Unit::coefficient>() const { return coefficient; };
+	template<>
+	double get<Unit::dB>() const { return 10 * std::log10(coefficient); };
 
-	void set(double value, Unit unit)
-	{
-		switch (unit)
-		{
-		case Unit::coefficient:
-			coefficient = value;
-			break;
-		case Unit::dB:
-			coefficient = std::pow(10.0, value / 10.0);
-			break;
-		}
-	}
+	template<Unit U>
+	void set(double value) = 0;
+	template<>
+	void set<Unit::coefficient>(double value) { coefficient = value; }
+	template<>
+	void set<Unit::dB>(double value) { coefficient = std::pow(10.0, value / 10.0); }
 
 	bool operator<(const PowerCoefficient& second) const
 	{
 		return coefficient < second.coefficient;
 	}
 
-	PowerCoefficient operator*(const PowerCoefficient& second) const
+	friend PowerCoefficient operator*(const PowerCoefficient& a, const PowerCoefficient& b)
 	{
-		PowerCoefficient result;
-		result.coefficient = coefficient * second.coefficient;
-		return result;
+		return PowerCoefficient(a.coefficient * b.coefficient);
 	}
 };
 
@@ -341,43 +355,39 @@ public:
 		coefficient(1)
 	{ }
 
-	AntenaGain(double value, Unit unit)
+	explicit AntenaGain(double coefficient) :
+		coefficient(coefficient)
+	{ }
+
+	template<Unit U>
+	static AntenaGain in(double value)
 	{
-		set(value, unit);
+		AntenaGain g;
+		g.set<U>(value);
+		return g;
 	}
 
-	double get(Unit unit) const
-	{
-		switch (unit)
-		{
-		case Unit::coefficient:
-			return coefficient;
-		case Unit::dBi:
-			return 10 * std::log10(coefficient);
-		case Unit::dBd:
-			return 10 * std::log10(coefficient / 1.64);
-		}
-	}
+	template<Unit U>
+	double get() const = 0;
+	template<>
+	double get<Unit::coefficient>() const { return coefficient; };
+	template<>
+	double get<Unit::dBi>() const { return 10 * std::log10(coefficient); };
+	template<>
+	double get<Unit::dBd>() const { return 10 * std::log10(coefficient / 1.64); };
 
-	void set(double value, Unit unit)
-	{
-		switch (unit)
-		{
-		case Unit::coefficient:
-			coefficient = value;
-			break;
-		case Unit::dBi:
-			coefficient = std::pow(10, value / 10);
-			break;
-		case Unit::dBd:
-			coefficient = std::pow(10, value / 10) * 1.64;
-			break;
-		}
-	}
+	template<Unit U>
+	void set(double value) = 0;
+	template<>
+	void set<Unit::coefficient>(double value) { coefficient = value; }
+	template<>
+	void set<Unit::dBi>(double value) { coefficient = std::pow(10, value / 10); }
+	template<>
+	void set<Unit::dBd>(double value) { coefficient = std::pow(10, value / 10) * 1.64; }
 
 	operator PowerCoefficient() const
 	{
-		return PowerCoefficient(coefficient, PowerCoefficient::Unit::coefficient);
+		return PowerCoefficient(coefficient);
 	}
 };
 
@@ -397,49 +407,42 @@ public:
 		mW(0)
 	{ }
 
-	Power(double value, Unit unit)
-	{
-		set(value, unit);
-	}
+	explicit Power(double mW):
+		mW(mW)
+	{ }
 
-	double get(Unit unit) const
-	{
-		switch (unit)
-		{
-		case Unit::mW:
-			return mW;
-		case Unit::W:
-			return get(Unit::mW) / 1000;
-		case Unit::dBm:
-			return 10 * std::log10(mW);
-		case Unit::dBW:
-			return get(Unit::dBm) - 30;
-		}
-	}
-
-	void set(double value, Unit unit)
-	{
-		switch (unit)
-		{
-		case Unit::mW:
-			mW = value;
-			break;
-		case Unit::W:
-			set(value * 1000, Unit::mW);
-			break;
-		case Unit::dBm:
-			mW = std::pow(10.0, value / 10.0);
-			break;
-		case Unit::dBW:
-			set(value + 30, Unit::dBm);
-			break;
-		}
-	}
-
-	Power operator*(const PowerCoefficient& coefficient) const
+	template<Unit U>
+	static Power in(double value)
 	{
 		Power power;
-		power.mW = mW * coefficient.get(PowerCoefficient::Unit::coefficient);
+		power.set<U>(value);
 		return power;
+	}
+
+	template<Unit U>
+	void set(double value) = 0;
+	template<>
+	void set<Unit::mW>(double value) { mW = value; }
+	template<>
+	void set<Unit::W>(double value) { mW = value * 1000; }
+	template<>
+	void set<Unit::dBm>(double value) { mW = std::pow(10.0, value / 10.0); }
+	template<>
+	void set<Unit::dBW>(double value) { set<Unit::dBm>(value + 30); }
+	
+	template<Unit U>
+	double get() = 0;
+	template<>
+	double get<Unit::mW>() { return mW; }
+	template<>
+	double get<Unit::W>() { return mW / 1000; }
+	template<>
+	double get<Unit::dBm>() { return 10 * std::log10(mW); }
+	template<>
+	double get<Unit::dBW>() { return get<Unit::dBm>() - 30; }
+
+	friend Power operator*(const Power& power, const PowerCoefficient& coefficient)
+	{
+		return Power(power.mW * coefficient.get<PowerCoefficient::Unit::coefficient>());
 	}
 };

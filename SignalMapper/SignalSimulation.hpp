@@ -41,7 +41,7 @@ private:
 			position(position),
 			normalVector(normalVector.normalized()),
 			reflections(reflections),
-			powerCoefficient(1, PowerCoefficient::Unit::coefficient)
+			powerCoefficient(PowerCoefficient::in<PowerCoefficient::Unit::coefficient>(1))
 		{ }
 	};
 
@@ -99,7 +99,7 @@ public:
 
 			Distance distanceDiff = distance - ray.previousDistance;
 
-			if (ray.reflections > 0 && connection.reflection.coefficient.get(PowerCoefficient::Unit::coefficient) != 0)
+			if (ray.reflections > 0 && connection.reflection.coefficient.get<PowerCoefficient::Unit::coefficient>() != 0)
 			{
 				Ray reflectedRay = ray;
 				reflectedRay.reflections--;
@@ -112,9 +112,9 @@ public:
 				rays.push_back(reflectedRay);
 			}
 
-			if (connection.absorption.get(AbsorptionCoefficient::Unit::coefficient, simulationSpace->precision) != 1)
+			if (connection.absorption.get<AbsorptionCoefficient::Unit::coefficient>(simulationSpace->precision) != 1)
 			{
-				ray.powerCoefficient = ray.powerCoefficient * connection.absorption.get(AbsorptionCoefficient::Unit::coefficient, distanceDiff);
+				ray.powerCoefficient = ray.powerCoefficient * connection.absorption.get<AbsorptionCoefficient::Unit::coefficient>(distanceDiff);
 			}
 
 			ray.position = ray.position + newOffset;

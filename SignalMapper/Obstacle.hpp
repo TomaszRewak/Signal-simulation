@@ -13,7 +13,7 @@ struct ObstacleDistortion
 	PowerCoefficient coefficient;
 
 	ObstacleDistortion() :
-		coefficient(0, PowerCoefficient::Unit::coefficient)
+		coefficient(0)
 	{ }
 
 	ObstacleDistortion(const FreeVector& normalVector, const PowerCoefficient& coefficient) :
@@ -22,10 +22,8 @@ struct ObstacleDistortion
 	{ }
 
 	ObstacleDistortion operator+(const ObstacleDistortion& second) const {
-
-
 		return ObstacleDistortion(
-			(normalVector * coefficient.get(PowerCoefficient::Unit::coefficient) + second.normalVector * second.coefficient.get(PowerCoefficient::Unit::coefficient)).normalized(),
+			(normalVector * coefficient.get<PowerCoefficient::Unit::coefficient>() + second.normalVector * second.coefficient.get<PowerCoefficient::Unit::coefficient>()).normalized(),
 			std::max(coefficient, second.coefficient)
 		);
 	}
@@ -40,20 +38,20 @@ public:
 };
 using ObstaclePtr = std::shared_ptr<const Obstacle>;
 
+template<Distance::Unit U>
 class UniformObstacle : public Obstacle
 {
 public:
 	const SolidShapePtr shape;
-	const Distance::Unit spaceUnit;
 	const MaterialPtr material;
 
-	UniformObstacle(SolidShapePtr shape, Distance::Unit spaceUnit, MaterialPtr material) :
-		shape(shape), spaceUnit(spaceUnit), material(material)
+	UniformObstacle(SolidShapePtr shape, MaterialPtr material) :
+		shape(shape), material(material)
 	{ }
 
 	virtual bool inside(Position position) const
 	{
-		return shape->contains(position.get(spaceUnit));
+		return shape->contains(position.get<U>());
 	}
 
 	virtual AbsorptionCoefficient absorption(Position begin, Position end, Frequency frequency) const
@@ -61,16 +59,17 @@ public:
 		AbsorptionCoefficient coefficient;
 		AbsorptionCoefficient materialCoefficient = material->absorption(frequency);
 
-		if (shape->contains(begin.get(spaceUnit)))
+		if (shape->contains(begin.get<U>()))
 			coefficient = materialCoefficient;
 
-		double distance = begin.distanceTo(end).get(spaceUnit);
+		double distance = begin.distanceTo(end).get<U>();
+
 		Vector vector(
-			begin.get(spaceUnit),
-			end.get(spaceUnit)
+			begin.get<U>(),
+			end.get<U>()
 		);
 
-		for (const auto& intersection : shape->intersections(vector))
+		shape->intersections(vector, [&coefficient, &vector, &materialCoefficient, distance](const Intersection& intersection) {
 			if (intersection.inRange && intersection.distance > 0)
 			{
 				if (intersection.inRange && intersection.normalVector * vector.freeVector < 0)
@@ -78,6 +77,7 @@ public:
 				else
 					coefficient = coefficient - materialCoefficient * (1 - intersection.distance / distance);
 			}
+		});
 
 		return coefficient;
 	}
@@ -85,15 +85,17 @@ public:
 	virtual ObstacleDistortion distortion(Position begin, Position end, Frequency frequency) const
 	{
 		Vector vector(
-			begin.get(spaceUnit),
-			end.get(spaceUnit)
+			begin.get<U>(),
+			end.get<U>()
 		);
 
 		ObstacleDistortion distortion;
+		PowerCoefficient materialCoefficient = material->reflection(frequency);
 
-		for (const auto& intersection : shape->intersections(vector))
+		shape->intersections(vector, [&distortion, &vector, &materialCoefficient](const Intersection& intersection) {
 			if (intersection.inRange && intersection.normalVector * vector.freeVector < 0)
-				distortion = distortion + ObstacleDistortion(intersection.normalVector, material->reflection(frequency));
+				distortion = distortion + ObstacleDistortion(intersection.normalVector, materialCoefficient);
+		});
 
 		return distortion;
 	}

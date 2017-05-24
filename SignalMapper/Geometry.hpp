@@ -5,11 +5,12 @@
 #include <vector>
 #include <limits>
 #include <memory>
+#include <functional>
 
 struct SolidShape
 {
 	virtual bool contains(Point point) const = 0;
-	virtual std::vector<Intersection> intersections(Vector ray) const = 0;
+	virtual void intersections(Vector ray, std::function<void(const Intersection&)>&& callback) const = 0;
 };
 using SolidShapePtr = std::shared_ptr<const SolidShape>;
 
@@ -77,10 +78,8 @@ public:
 		return intersections % 2 == 1;
 	}
 
-	virtual std::vector<Intersection> intersections(Vector ray) const
+	virtual void intersections(Vector ray, std::function<void(const Intersection&)>&& callback) const
 	{
-		std::vector<Intersection> intersections;
-
 		for (int i = 0; i < points.size() - 1; i++)
 		{
 			Line wallLine(
@@ -91,10 +90,8 @@ public:
 			LineIntersection intersection(wallLine, ray);
 
 			if (intersection.intersecting)
-				intersections.push_back(intersection);
+				callback(intersection);
 		}
-
-		return intersections;
 	}
 };
 
@@ -112,32 +109,24 @@ struct CSGShapesDifference : public CSGShape
 		return shapeA->contains(point) && !shapeB->contains(point);
 	}
 
-	virtual std::vector<Intersection> intersections(Vector ray) const
+	virtual void intersections(Vector ray, std::function<void(const Intersection&)>&& callback) const
 	{
 		std::vector<Intersection> intersections;
 
-		std::vector<Intersection> intersectionsA = shapeA->intersections(ray);
-		std::vector<Intersection> intersectionsB = shapeB->intersections(ray);
-
-		intersections.reserve(intersectionsA.size() + intersectionsB.size());
-
-		for (Intersection& intersection : intersectionsA)
+		shapeA->intersections(
+			ray,
+			[this, &callback](const Intersection& intersection)
 		{
-			if (!shapeB->contains(intersection.position))
-			{
-				intersections.push_back(intersection);
-			}
-		}
+			if (!this->shapeB->contains(intersection.position))
+				callback(intersection);
+		});
 
-		for (Intersection& intersection : intersectionsB)
+		shapeB->intersections(
+			ray,
+			[this, &callback](const Intersection& intersection)
 		{
-			if (shapeA->contains(intersection.position))
-			{
-				intersection.normalVector = -intersection.normalVector;
-				intersections.push_back(intersection);
-			}
-		}
-
-		return move(intersections);
+			if (this->shapeA->contains(intersection.position))
+				callback(-intersection);
+		});
 	}
 };

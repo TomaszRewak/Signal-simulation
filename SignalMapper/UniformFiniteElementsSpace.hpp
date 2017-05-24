@@ -14,14 +14,15 @@ protected:
 	std::vector<Element> elements;
 
 public:
-	const Rectangle bounds;
-	const double elementsDistance;
+	//const Rectangle bounds;
+	//const double elementsDistance;
 	const DiscreteSize resolution;
 
-	UniformFiniteElementsSpace(Rectangle bounds, double elementsDistance) :
-		bounds(bounds),
-		elementsDistance(elementsDistance),
-		resolution(bounds.getWidth(), bounds.getHeight(), elementsDistance)
+	UniformFiniteElementsSpace(DiscreteSize resolution) :
+		//bounds(bounds),
+		//elementsDistance(elementsDistance),
+		//resolution(bounds.getWidth(), bounds.getHeight(), elementsDistance)
+		resolution(resolution)
 	{
 		elements = std::vector<Element>(resolution.width * resolution.height);
 	}
@@ -36,7 +37,7 @@ public:
 		return elements[discretePoint.y * resolution.width + discretePoint.x];
 	}
 
-	Element& getElement(Point point)
+	/*Element& getElement(Point point)
 	{
 		return getElement(getDiscretePosition(point));
 	}
@@ -44,7 +45,7 @@ public:
 	const Element& getElement(Point point) const
 	{
 		return getElement(getDiscretePoint(point));
-	}
+	}*/
 
 	bool inRange(DiscretePoint point) const
 	{
@@ -53,24 +54,5 @@ public:
 			point.x < resolution.width &&
 			point.y >= 0 &&
 			point.y < resolution.height;
-	}
-
-	bool inRange(Point point) const
-	{
-		return inRange(getDiscretePoint(point));
-	}
-
-	Point getPoint(DiscretePoint discretePoint) const {
-		return Point(
-			discretePoint.x * elementsDistance + bounds.minX(),
-			discretePoint.y * elementsDistance + bounds.minY()
-		);
-	}
-
-	DiscretePoint getDiscretePoint(Point point) const {
-		return DiscretePoint(
-			(int)std::floor((point.x - bounds.minX()) / elementsDistance),
-			(int)std::floor((point.y - bounds.minY()) / elementsDistance)
-		);
 	}
 };
