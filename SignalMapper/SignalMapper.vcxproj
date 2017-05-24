@@ -124,7 +124,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Geometry.hpp" />
-    <ClCompile Include="SignalSimulationSpace.hpp" />
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

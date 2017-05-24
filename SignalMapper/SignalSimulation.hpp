@@ -1,6 +1,5 @@
 #pragma once
 
-#include "SignalSimulationSpace.hpp"
 #include "SignalMap.hpp"
 #include "Transmitter.hpp"
 #include "UniformFiniteElementsSpace.hpp"
@@ -18,7 +17,16 @@ struct SignalSimulationParameters {
 	{ }
 };
 
-class SignalSimulation
+struct SignalSimulationDistortion
+{
+	AbsorptionCoefficient absorption;
+	ObstacleDistortion reflection;
+
+	SignalSimulationDistortion()
+	{}
+};
+
+class SignalSimulation : public ConnectionsSpace<SignalSimulationDistortion>
 {
 private:
 	struct Ray
@@ -46,17 +54,49 @@ private:
 	};
 
 	const SimulationSpacePtr simulationSpace;
+	const Frequency frequency;
 	const SignalSimulationParameters simulationParameters;
 
 public:
-	SignalSimulation(SimulationSpacePtr simulationSpace, SignalSimulationParameters simulationParameters = SignalSimulationParameters()) :
+	SignalSimulation(SimulationSpacePtr simulationSpace, Frequency frequency, SignalSimulationParameters simulationParameters = SignalSimulationParameters()) :
+		ConnectionsSpace(simulationSpace->spaceSize, simulationSpace->precision),
 		simulationSpace(simulationSpace),
+		frequency(frequency),
 		simulationParameters(simulationParameters)
-	{ }
+	{ 
+		const auto directions = DiscreteDirection::baseDirections();
 
-	SignalMapPtr simulate(Frequency frequency, Position transmitterPosition) const
+		for (const auto& obstacle : simulationSpace->obstacles)
+		{
+			for (int x = 0; x < resolution.width; x++)
+			{
+				for (int y = 0; y < resolution.height; y++)
+				{
+					DiscretePoint firstDiscretePosition(x, y);
+					Position firstPosition = getPosition(firstDiscretePosition);
+
+					auto& element = getElement(firstDiscretePosition);
+
+					for (int i = 0; i < directions.size(); i++)
+					{
+						DiscretePoint secondDiscretePosition = firstDiscretePosition + directions[i];
+						Position secondPosition = getPosition(secondDiscretePosition);
+
+						auto& connection = element[i];
+
+						auto absorption = obstacle->absorption(firstPosition, secondPosition, frequency);
+						connection.absorption = connection.absorption + absorption;
+
+						auto distortion = obstacle->distortion(firstPosition, secondPosition, frequency);
+						connection.reflection = connection.reflection + distortion;
+					}
+				}
+			}
+		}
+	}
+
+	SignalMapPtr simulate(Position transmitterPosition) const
 	{
-		auto distortionMap = std::make_shared<SignalDistortionConnectionSpace>(frequency, simulationSpace);
 		auto signalMap = std::make_shared<SignalMap>(simulationSpace);
 
 		std::vector<Ray> rays;
@@ -67,7 +107,7 @@ public:
 
 			Ray ray(
 				transmitterPosition,
-				distortionMap->getDiscretePoint(transmitterPosition),
+				this->getDiscretePoint(transmitterPosition),
 				FreeVector(std::sin(alpha), std::cos(alpha)),
 				simulationParameters.reflectionCount
 			);
@@ -90,7 +130,7 @@ public:
 			if (mapElement < strength)
 				mapElement = strength;
 
-			auto& connections = distortionMap->getElement(ray.position);
+			auto& connections = this->getElement(ray.position);
 
 			FreeVector newOffset = ray.offset + ray.normalVector;
 			DiscreteDirection direction = newOffset;

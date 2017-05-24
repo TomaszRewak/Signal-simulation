@@ -64,19 +64,19 @@ int main()
 		std::make_shared<UniformObstacle<Distance::Unit::m>>(buildingShape, material)
 	};
 
-	cout << "Preparing building map" << endl;
+	cout << "Preparing simulation" << endl;
 
 	SimulationSpacePtr simulationSpace = std::make_shared<SimulationSpace>(
 		obstacles,
 		Surface::in<Distance::Unit::m>(Rectangle(-5, -5, 7, 7)),
-		Distance::in<Distance::Unit::m>(0.1)
+		Distance::in<Distance::Unit::m>(0.01)
 		);
+
+	cout << "Running simulation" << endl;
 
 	BuildingMapPtr buildingMap = std::make_shared<BuildingMap>(
 		simulationSpace
 		);
-
-	cout << "Building map ready" << endl;
 
 	/*SignalSimulationSpacePtr simulationSpace = std::make_shared<SignalSimulationSpace>(
 		obstacles,
@@ -85,10 +85,11 @@ int main()
 		);*/
 
 	SignalSimulationParameters simulationParameters(5000, 3);
-	SignalSimulation simulation(simulationSpace, simulationParameters);
+	SignalSimulation simulation(simulationSpace, Frequency::in<Frequency::Unit::GHz>(2.4), simulationParameters);
+
+	cout << "Printing to file" << endl;
 
 	SignalMapPtr signalMap = simulation.simulate(
-		Frequency::in<Frequency::Unit::GHz>(2.4),
 		Position::in<Distance::Unit::m>(Point(2, -3))
 	);
 
@@ -108,7 +109,7 @@ int main()
 
 	double buildingLongerSide = max(boundingBox.getWidth(), boundingBox.getHeight());
 
-	cout << "Simulation ready" << endl;
+	cout << "Finished" << endl;
 
 	fstream file;
 	file.open("Release/test.pgm", ios::out);

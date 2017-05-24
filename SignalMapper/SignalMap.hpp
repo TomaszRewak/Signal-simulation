@@ -1,7 +1,6 @@
 #pragma once
 
 #include "UniformFiniteElementsSpace.hpp"
-#include "SignalSimulationSpace.hpp"
 #include "Transmitter.hpp"
 #include "SimulationSpace.hpp"
 
