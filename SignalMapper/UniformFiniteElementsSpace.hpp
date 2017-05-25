@@ -14,40 +14,25 @@ protected:
 	std::vector<Element> elements;
 
 public:
-	//const Rectangle bounds;
-	//const double elementsDistance;
 	const DiscreteSize resolution;
 
-	UniformFiniteElementsSpace(DiscreteSize resolution) :
-		//bounds(bounds),
-		//elementsDistance(elementsDistance),
-		//resolution(bounds.getWidth(), bounds.getHeight(), elementsDistance)
+	UniformFiniteElementsSpace(const DiscreteSize& resolution) :
 		resolution(resolution)
 	{
 		elements = std::vector<Element>(resolution.width * resolution.height);
 	}
 
-	Element& getElement(DiscretePoint discretePoint)
+	Element& getElement(const DiscretePoint& discretePoint)
 	{
 		return elements[discretePoint.y * resolution.width + discretePoint.x];
 	}
 
-	const Element& getElement(DiscretePoint discretePoint) const
+	const Element& getElement(const DiscretePoint& discretePoint) const
 	{
 		return elements[discretePoint.y * resolution.width + discretePoint.x];
 	}
 
-	/*Element& getElement(Point point)
-	{
-		return getElement(getDiscretePosition(point));
-	}
-
-	const Element& getElement(Point point) const
-	{
-		return getElement(getDiscretePoint(point));
-	}*/
-
-	bool inRange(DiscretePoint point) const
+	bool inRange(const DiscretePoint& point) const
 	{
 		return
 			point.x >= 0 &&

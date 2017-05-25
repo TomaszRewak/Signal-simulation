@@ -2,7 +2,8 @@
 #include <fstream>
 #include <memory>
 
-#include "SignalSimulation.hpp"
+#include "RaycastingSignalSimulation.hpp"
+#include "BuildingMap.hpp"
 
 using namespace std;
 
@@ -64,15 +65,13 @@ int main()
 		std::make_shared<UniformObstacle<Distance::Unit::m>>(buildingShape, material)
 	};
 
-	cout << "Preparing simulation" << endl;
-
-	SimulationSpacePtr simulationSpace = std::make_shared<SimulationSpace>(
+	SignalSimulationSpaceDefinitionPtr simulationSpace = std::make_shared<SignalSimulationSpaceDefinition>(
 		obstacles,
 		Surface::in<Distance::Unit::m>(Rectangle(-5, -5, 7, 7)),
-		Distance::in<Distance::Unit::m>(0.01)
+		Distance::in<Distance::Unit::m>(0.05)
 		);
 
-	cout << "Running simulation" << endl;
+	cout << "Preparing simulation" << endl;
 
 	BuildingMapPtr buildingMap = std::make_shared<BuildingMap>(
 		simulationSpace
@@ -84,10 +83,10 @@ int main()
 		Distance(5, Distance::Unit::cm)
 		);*/
 
-	SignalSimulationParameters simulationParameters(5000, 3);
-	SignalSimulation simulation(simulationSpace, Frequency::in<Frequency::Unit::GHz>(2.4), simulationParameters);
+	RaycastingSignalSimulationParameters simulationParameters(5000, 3);
+	RaycastingSignalSimulation simulation(simulationSpace, Frequency::in<Frequency::Unit::GHz>(2.4), simulationParameters);
 
-	cout << "Printing to file" << endl;
+	cout << "Simulating" << endl;
 
 	SignalMapPtr signalMap = simulation.simulate(
 		Position::in<Distance::Unit::m>(Point(2, -3))

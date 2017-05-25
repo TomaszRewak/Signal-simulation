@@ -112,9 +112,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BuildingMap.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="Obstacle.hpp" />
     <ClInclude Include="Physics.hpp" />
+    <ClInclude Include="RaycastingSignalSimulation.hpp" />
     <ClInclude Include="SignalMap.hpp" />
     <ClInclude Include="SignalSimulation.hpp" />
     <ClInclude Include="Math.hpp" />

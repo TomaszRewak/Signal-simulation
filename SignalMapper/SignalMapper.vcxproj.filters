@@ -18,12 +18,6 @@
     <ClInclude Include="Transmitter.hpp">
       <Filter>Model</Filter>
     </ClInclude>
-    <ClInclude Include="SignalMap.hpp">
-      <Filter>Model</Filter>
-    </ClInclude>
-    <ClInclude Include="SignalSimulation.hpp">
-      <Filter>Model</Filter>
-    </ClInclude>
     <ClInclude Include="Math.hpp">
       <Filter>Model</Filter>
     </ClInclude>
@@ -34,6 +28,18 @@
       <Filter>Model</Filter>
     </ClInclude>
     <ClInclude Include="SimulationSpace.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="SignalSimulation.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="BuildingMap.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="SignalMap.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="RaycastingSignalSimulation.hpp">
       <Filter>Model</Filter>
     </ClInclude>
   </ItemGroup>

@@ -6,20 +6,6 @@
 #include <algorithm>
 #include <memory>
 
-struct SimulationSpace
-{
-	std::vector<ObstaclePtr> obstacles;
-	Surface spaceSize;
-	Distance precision;
-
-	SimulationSpace(std::vector<ObstaclePtr> obstacles, Surface spaceSize, Distance precision) :
-		obstacles(obstacles),
-		spaceSize(spaceSize),
-		precision(precision)
-	{ }
-};
-using SimulationSpacePtr = std::shared_ptr<const SimulationSpace>;
-
 template<typename Element>
 class SimulationUniformFiniteElementsSpace : protected UniformFiniteElementsSpace<Element>
 {
@@ -28,7 +14,7 @@ protected:
 	const Distance precision;
 
 public:
-	SimulationUniformFiniteElementsSpace(Surface surface, Distance precision) :
+	SimulationUniformFiniteElementsSpace(const Surface& surface, const Distance& precision) :
 		UniformFiniteElementsSpace(
 			DiscreteSize( 
 				surface.get<Distance::Unit::m>().getWidth(), 
@@ -39,29 +25,29 @@ public:
 		precision(precision)
 	{ }
 
-	Element& getElement(Position position)
+	Element& getElement(const Position& position)
 	{
 		return getElement(getDiscretePoint(position));
 	}
 
-	const Element& getElement(Position position) const
+	const Element& getElement(const Position& position) const
 	{
 		return getElement(getDiscretePoint(position));
 	}
 
-	bool inRange(Position position) const
+	bool inRange(const Position& position) const
 	{
 		return inRange(getDiscretePoint(position));
 	}
 
-	Position getPosition(DiscretePoint discretePoint) const {
+	Position getPosition(const DiscretePoint& discretePoint) const {
 		return Position(
 			surface.minX() + precision * discretePoint.x,
 			surface.minY() + precision * discretePoint.y
 		);
 	}
 
-	DiscretePoint getDiscretePoint(Position position) const {
+	DiscretePoint getDiscretePoint(const Position& position) const {
 		return DiscretePoint(
 			(int)std::floor((position.x() - surface.minX()) / precision),
 			(int)std::floor((position.y() - surface.minY()) / precision)
@@ -77,7 +63,7 @@ template <typename T>
 class ConnectionsSpace : public SimulationUniformFiniteElementsSpace<std::array<T, 4>>
 {
 public:
-	ConnectionsSpace(Surface surface, Distance precision) :
+	ConnectionsSpace(const Surface& surface, const Distance& precision) :
 		SimulationUniformFiniteElementsSpace(surface, precision)
 	{ }
 };

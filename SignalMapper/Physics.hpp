@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Math.hpp"
+
 struct Distance
 {
 protected:
