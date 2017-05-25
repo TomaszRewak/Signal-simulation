@@ -96,7 +96,7 @@ int main()
 		Power::in<Power::Unit::dBm>(20.),
 		AntenaGain::in<AntenaGain::Unit::dBi>(6)
 	);
-	Reciver reciver(
+	Receiver receiver(
 		AntenaGain::in<AntenaGain::Unit::dBd>(0)
 	);
 
@@ -133,7 +133,7 @@ int main()
 				color = 50;
 			else
 			{
-				double signal = signalMap->getSignalStrength(position, transmitter, reciver).get<Power::Unit::dBm>();
+				double signal = signalMap->getSignalStrength(position, transmitter, receiver).get<Power::Unit::dBm>();
 
 				// -30 (best) - -70(worst) 
 				signal = (signal + 70.) / 40.;

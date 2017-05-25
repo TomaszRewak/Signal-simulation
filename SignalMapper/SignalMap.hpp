@@ -8,7 +8,7 @@
 class SignalMap : public SimulationUniformFiniteElementsSpace<PowerCoefficient>
 {
 private:
-	PowerCoefficient getSignalStrength(DiscretePoint position, const Transmitter& transmitter, const Reciver& reciver) const
+	PowerCoefficient getSignalStrength(DiscretePoint position, const Transmitter& transmitter, const Receiver& receiver) const
 	{
 		position.x = std::max(position.x, 0);
 		position.y = std::max(position.y, 0);
@@ -27,7 +27,7 @@ public:
 				getElement(DiscretePoint(x, y)) = PowerCoefficient::in<PowerCoefficient::Unit::coefficient>(0);
 	}
 
-	Power getSignalStrength(Position position, const Transmitter& transmitter, const Reciver& reciver) const
+	Power getSignalStrength(Position position, const Transmitter& transmitter, const Receiver& receiver) const
 	{
 		if (!inRange(position))
 			return Power();
@@ -48,12 +48,12 @@ public:
 			auto pPosition = getPosition(p);
 
 			db +=
-				getSignalStrength(p, transmitter, reciver).get<PowerCoefficient::Unit::dB>() *
+				getSignalStrength(p, transmitter, receiver).get<PowerCoefficient::Unit::dB>() *
 				(1 - abs(pPosition.x() - position.x()) / precision) *
 				(1 - abs(pPosition.y() - position.y()) / precision);
 		}
 
-		return transmitter.power * transmitter.antenaGain * reciver.antenaGain * PowerCoefficient::in<PowerCoefficient::Unit::dB>(db);
+		return transmitter.power * transmitter.antenaGain * receiver.antenaGain * PowerCoefficient::in<PowerCoefficient::Unit::dB>(db);
 	}
 };
 using SignalMapPtr = std::shared_ptr<const SignalMap>;

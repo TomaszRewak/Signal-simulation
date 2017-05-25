@@ -12,11 +12,11 @@ struct Transmitter
 	{ }
 };
 
-struct Reciver
+struct Receiver
 {
 	AntenaGain antenaGain;
 
-	Reciver(AntenaGain antenaGain) :
+	Receiver(AntenaGain antenaGain) :
 		antenaGain(antenaGain)
 	{ }
 };
