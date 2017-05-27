@@ -1,54 +1,92 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+#include <string>
 
 #include "RaycastingSignalSimulation.hpp"
+#include "FriisSignalSimulation.hpp"
+#include "BFSSignalSimulation.hpp"
 #include "BuildingMap.hpp"
 
 using namespace std;
 
+enum SimulationType
+{
+	Ray,
+	Friis,
+	BFS
+};
+
 int main()
 {
+	SimulationType type = SimulationType::BFS;
+
 	// http://www.am1.us/Protected_Papers/E10589_Propagation_Losses_2_and_5GHz.pdf
 
 	std::vector<Point> interior{
-		Point(-4, 0),
-		Point(-0.25, 0),
-		Point(-0.25, 1.5),
-		Point(0, 1.5),
-		Point(0, 0),
-		Point(1.5, 0),
-		Point(1.5, -0.25),
-		Point(0, -0.25),
-		Point(0, -4),
-		Point(4, -4),
-		Point(4, -2.5),
-		Point(4.25, -2.5),
-		Point(4.25, -4),
-		Point(6, -4),
-		Point(6, 6),
-		Point(4.25, 6),
-		Point(4.25, -1.5),
-		Point(4, -1.5),
-		Point(4, -0.25),
-		Point(2.5, -0.25),
-		Point(2.5, 0),
-		Point(4, 0),
-		Point(4, 6),
-		Point(0, 6),
-		Point(0, 2.5),
-		Point(-0.25, 2.5),
-		Point(-0.25, 6),
-		Point(-4, 6),
+		Point(4, 0.5),
+		Point(4, 3),
+		Point(4.5, 3),
+		Point(4.5, 0.5),
+		Point(6.5, 0.5),
+		Point(6.5, 3),
+		Point(7, 3),
+		Point(7, 0.5),
+		Point(13, 0.5),
+		Point(13, 3),
+		Point(13.5, 3),
+		Point(13.5, 0.5),
+		Point(16.5, 0.5),
+		Point(16.5, 7),
+		Point(13.5, 7),
+		Point(13.5, 4.5),
+		Point(13, 4.5),
+		Point(13, 9.5),
+		Point(10, 9.5),
+		Point(10, 7),
+		Point(7, 7),
+		Point(7, 4.5),
+		Point(6.5, 4.5),
+		Point(6.5, 7.5),
+		Point(9.5, 7.5),
+		Point(9.5, 10),
+		Point(10, 10),
+		Point(10, 10.5),
+		Point(10.5, 10.5),
+		Point(10.5, 10),
+		Point(13.5, 10),
+		Point(13.5, 7.5),
+		Point(19, 7.5),
+		Point(19, 12.5),
+		Point(10.5, 12.5),
+		Point(10.5, 12),
+		Point(10, 12),
+		Point(10, 12.5),
+		Point(0.5, 12.5),
+		Point(0.5, 10.5),
+		Point(4.5, 10.5),
+		Point(4.5, 9.5),
+		Point(4, 9.5),
+		Point(4, 10),
+		Point(0.5, 10),
+		Point(0.5, 7.5),
+		Point(4, 7.5),
+		Point(4, 8),
+		Point(4.5, 8),
+		Point(4.5, 4.5),
+		Point(4, 4.5),
+		Point(4, 7),
+		Point(0.5, 7),
+		Point(0.5, 0.5)
 	};
 
 	std::vector<Point> exterior{
-		Point(-4.5, -0.5),
-		Point(-0.5, -0.5),
-		Point(-0.5, -4.5),
-		Point(6.5, -4.5),
-		Point(6.5, 6.5),
-		Point(-4.5, 6.5)
+		Point(17, 0),
+		Point(17, 7),
+		Point(19.5, 7),
+		Point(19.5, 13),
+		Point(0, 13),
+		Point(0, 0)
 	};
 
 	SolidShapePtr buildingShape = std::make_shared<CSGShapesDifference>(
@@ -58,7 +96,7 @@ int main()
 
 	MaterialPtr material = std::make_shared<UniformMaterial>(
 		PowerCoefficient::in<PowerCoefficient::Unit::dB>(-6.24),
-		AbsorptionCoefficient::in<AbsorptionCoefficient::Unit::dB>(-4.43, Distance::in<Distance::Unit::mm>(200))
+		AbsorptionCoefficient::in<AbsorptionCoefficient::Unit::dB>(-4.43, Distance::in<Distance::Unit::mm>(300))
 		);
 
 	std::vector<ObstaclePtr> obstacles{
@@ -67,8 +105,8 @@ int main()
 
 	SignalSimulationSpaceDefinitionPtr simulationSpace = std::make_shared<SignalSimulationSpaceDefinition>(
 		obstacles,
-		Surface::in<Distance::Unit::m>(Rectangle(-5, -5, 7, 7)),
-		Distance::in<Distance::Unit::m>(0.05)
+		Surface::in<Distance::Unit::m>(Rectangle(-1, -1, 20.5, 14)),
+		Distance::in<Distance::Unit::m>(0.2)
 		);
 
 	cout << "Preparing simulation" << endl;
@@ -83,21 +121,62 @@ int main()
 		Distance(5, Distance::Unit::cm)
 		);*/
 
-	RaycastingSignalSimulationParameters simulationParameters(5000, 3);
-	RaycastingSignalSimulation simulation(simulationSpace, Frequency::in<Frequency::Unit::GHz>(2.4), simulationParameters);
-
-	cout << "Simulating" << endl;
-
-	SignalMapPtr signalMap = simulation.simulate(
-		Position::in<Distance::Unit::m>(Point(2, -3))
-	);
-
 	Transmitter transmitter(
 		Power::in<Power::Unit::dBm>(20.),
 		AntenaGain::in<AntenaGain::Unit::dBi>(6)
 	);
 	Receiver receiver(
 		AntenaGain::in<AntenaGain::Unit::dBd>(0)
+	);
+
+	Frequency frequency = Frequency::in<Frequency::Unit::GHz>(5.2);
+
+	SignalSimulationPtr signalSimulation;
+	string filename;
+
+	switch (type) {
+	case SimulationType::Ray:
+	{
+		filename = "ray";
+		RaycastingSignalSimulationParameters simulationParameters(
+			5000,
+			5,
+			transmitter,
+			receiver,
+			Power::in<Power::Unit::dBm>(-70)
+		);
+		signalSimulation = std::make_shared<RaycastingSignalSimulation>(simulationSpace, frequency, simulationParameters);
+		break;
+	}
+	case SimulationType::Friis:
+	{
+		filename = "friis";
+		FriisSignalSimulationParameters simulationParameters(
+			transmitter,
+			receiver,
+			Power::in<Power::Unit::dBm>(-70)
+		);
+		signalSimulation = std::make_shared<FriisSignalSimulation>(simulationSpace, frequency, simulationParameters);
+		break;
+	}	
+	case SimulationType::BFS:
+	{
+		filename = "bfs";
+		BFSSignalSimulationParameters simulationParameters(
+			transmitter,
+			receiver,
+			Power::in<Power::Unit::dBm>(-70),
+			PowerCoefficient::in<PowerCoefficient::Unit::dBm>(-90)
+		);
+		signalSimulation = std::make_shared<BFSSignalSimulation>(simulationSpace, frequency, simulationParameters);
+		break;
+	}
+	}
+
+	cout << "Simulating" << endl;
+
+	SignalMapPtr signalMap = signalSimulation->simulate(
+		Position::in<Distance::Unit::m>(Point(2, 2))
 	);
 
 	// save file
@@ -111,7 +190,7 @@ int main()
 	cout << "Finished" << endl;
 
 	fstream file;
-	file.open("Release/test.pgm", ios::out);
+	file.open("x64/" + filename + ".pgm", ios::out);
 
 	file << "P2\n";
 	file << imageSize << ' ' << imageSize << ' ' << 256 << "\n";
@@ -125,7 +204,7 @@ int main()
 					boundingBox.minX() + buildingLongerSide * i / imageSize,
 					boundingBox.minY() + buildingLongerSide * u / imageSize
 				)
-			);
+				);
 
 			int color = 0;
 
@@ -133,15 +212,20 @@ int main()
 				color = 50;
 			else
 			{
-				double signal = signalMap->getSignalStrength(position, transmitter, receiver).get<Power::Unit::dBm>();
+				Power strength = signalMap->getSignalStrength(position, transmitter, receiver);
 
-				// -30 (best) - -70(worst) 
-				signal = (signal + 70.) / 40.;
+				if (strength.get<Power::Unit::dBW>() != 0)
+				{
+					double signal = strength.get<Power::Unit::dBm>();
 
-				signal = std::max(signal, 0.);
-				signal = std::min(signal, 1.);
+					// -30 (best) - -70(worst) 
+					signal = (signal + 70.) / 40.;
 
-				color = (int)(255 * signal);
+					signal = std::max(signal, 0.);
+					signal = std::min(signal, 1.);
+
+					color = (int)(255 * signal);
+				}
 			}
 
 			file << color << ' ';

@@ -7,13 +7,12 @@
 #include <memory>
 
 template<typename Element>
-class SimulationUniformFiniteElementsSpace : protected UniformFiniteElementsSpace<Element>
+class SimulationUniformFiniteElementsSpace : public UniformFiniteElementsSpace<Element>
 {
-protected:
+public:
 	const Surface surface;
 	const Distance precision;
 
-public:
 	SimulationUniformFiniteElementsSpace(const Surface& surface, const Distance& precision) :
 		UniformFiniteElementsSpace(
 			DiscreteSize( 
@@ -57,13 +56,4 @@ public:
 
 	using UniformFiniteElementsSpace::getElement;
 	using UniformFiniteElementsSpace::inRange;
-};
-
-template <typename T>
-class ConnectionsSpace : public SimulationUniformFiniteElementsSpace<std::array<T, 4>>
-{
-public:
-	ConnectionsSpace(const Surface& surface, const Distance& precision) :
-		SimulationUniformFiniteElementsSpace(surface, precision)
-	{ }
 };

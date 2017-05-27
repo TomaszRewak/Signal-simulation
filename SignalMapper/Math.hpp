@@ -16,6 +16,11 @@ struct Point
 	Point(double x, double y) :
 		x(x), y(y)
 	{ }
+
+	friend bool operator!=(const Point & a, const Point& b)
+	{
+		return a.x != b.x || a.y != b.y;
+	}
 };
 
 struct FreeVector
@@ -48,32 +53,37 @@ struct FreeVector
 		return FreeVector(dy, -dx);
 	}
 
-	FreeVector operator*(double by) const
+	friend FreeVector operator*(const FreeVector& value, double by)
 	{
-		return FreeVector(dx * by, dy * by);
+		return FreeVector(value.dx * by, value.dy * by);
 	}
 
-	FreeVector operator+(FreeVector v) const
+	friend FreeVector operator+(const FreeVector& a, const FreeVector& b)
 	{
-		return FreeVector(dx + v.dx, dy + v.dy);
+		return FreeVector(a.dx + b.dx, a.dy + b.dy);
 	}
 
-	FreeVector operator-(FreeVector v) const
+	friend FreeVector operator-(const FreeVector& a, const FreeVector& b)
 	{
-		return FreeVector(dx - v.dx, dy - v.dy);
+		return FreeVector(a.dx - b.dx, a.dy - b.dy);
 	}
 
-	FreeVector operator-() const
+	friend FreeVector operator-(const FreeVector& value)
 	{
-		return FreeVector(-dx, -dy);
+		return FreeVector(-value.dx, -value.dy);
 	}
 
-	double operator*(FreeVector vector) const
+	friend double operator*(const FreeVector& a, const FreeVector& b)
 	{
-		return dx * vector.dx + dy * vector.dy;
+		return a.dx * b.dx + a.dy * b.dy;
 	}
 
-	FreeVector reflectedBy(FreeVector normal) const
+	friend Point operator+(const Point& point, const FreeVector& vector)
+	{
+		return Point(point.x + vector.dx, point.y + vector.dy);
+	}
+
+	FreeVector reflectedBy(const FreeVector& normal) const
 	{
 		FreeVector d = *this;
 		FreeVector n = normal.normalized();
@@ -81,11 +91,6 @@ struct FreeVector
 		return d - n.normalized() * 2 * (d * n);
 	}
 };
-
-inline Point operator+(const Point& point, const FreeVector& vector)
-{
-	return Point(point.x + vector.dx, point.y + vector.dy);
-}
 
 struct Vector
 {
@@ -229,40 +234,19 @@ struct DiscreteDirection
 	const int x;
 	const int y;
 
-	DiscreteDirection(int i) :
-		x((i >> 1) == 0 ? (i % 2 ? 1 : -1) : 0),
-		y((i >> 1) == 1 ? (i % 2 ? 1 : -1) : 0)
+	DiscreteDirection() :
+		x(0),
+		y(0)
 	{ }
 
 	DiscreteDirection(int x, int y) :
-		x(std::abs(x) > std::abs(y) ? x > 0 ? 1 : -1 : 0),
-		y(std::abs(x) <= std::abs(y) ? y > 0 ? 1 : -1 : 0)
+		x(x),
+		y(y)
 	{ }
 
-	DiscreteDirection(const FreeVector& vector) :
-		DiscreteDirection(vector.dx, vector.dy)
-	{ }
-
-	int getIndex() const
+	operator FreeVector() const
 	{
-		return x ? (0 << 1) | x == 1 : (1 << 1) | y == 1;
-	}
-
-	static const std::array<DiscreteDirection, 4> baseDirections()
-	{
-		return std::array<DiscreteDirection, 4> {
-			{
-				DiscreteDirection(0),
-					DiscreteDirection(1),
-					DiscreteDirection(2),
-					DiscreteDirection(3)
-			}
-		};
-	}
-
-	operator FreeVector()
-	{
-		return FreeVector(x, y);
+		return FreeVector(x, y).normalized();
 	}
 
 	DiscreteDirection operator-() const

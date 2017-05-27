@@ -21,17 +21,9 @@ struct SignalSimulationSpaceDefinition
 };
 using SignalSimulationSpaceDefinitionPtr = std::shared_ptr<const SignalSimulationSpaceDefinition>;
 
-template<typename Element>
-class SignalSimulation : public ConnectionsSpace<Element>
+class SignalSimulation
 {
-protected:
-	const SignalSimulationSpaceDefinitionPtr simulationSpace;
-
 public:
-	SignalSimulation(SignalSimulationSpaceDefinitionPtr simulationSpace) :
-		ConnectionsSpace(simulationSpace->spaceSize, simulationSpace->precision),
-		simulationSpace(simulationSpace)
-	{ }
-
 	virtual SignalMapPtr simulate(Position transmitterPosition) const = 0;
 };
+using SignalSimulationPtr = std::shared_ptr<SignalSimulation const>;

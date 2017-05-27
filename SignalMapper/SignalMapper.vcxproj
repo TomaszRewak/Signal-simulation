@@ -112,6 +112,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BFSSignalSimulation.hpp" />
     <ClInclude Include="BuildingMap.hpp" />
     <ClInclude Include="Material.hpp" />
     <ClInclude Include="Obstacle.hpp" />
@@ -123,9 +124,11 @@
     <ClInclude Include="SimulationSpace.hpp" />
     <ClInclude Include="Transmitter.hpp" />
     <ClInclude Include="UniformFiniteElementsSpace.hpp" />
+    <ClInclude Include="WaveformSignalSimulation.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Geometry.hpp" />
+    <ClCompile Include="FriisSignalSimulation.hpp" />
     <ClCompile Include="Test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

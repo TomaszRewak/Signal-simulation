@@ -4,6 +4,14 @@
 #include "SimulationSpace.hpp"
 
 #include <vector>
+#include <functional>
+
+template<typename T>
+struct SmoothingFilter {
+	virtual T smooth(Point point, std::function<T(Point)> f) const = 0;
+};
+template<typename T>
+using SmoothingFilterPtr = std::shared_ptr<SmoothingFilter<T> const>;
 
 class SignalMap : public SimulationUniformFiniteElementsSpace<PowerCoefficient>
 {
@@ -37,7 +45,7 @@ public:
 		DiscretePoint points[]{
 			point,
 			point + DiscreteDirection(1, 0),
-			point + DiscreteDirection(1, 0) + DiscreteDirection(0, 1),
+			point + DiscreteDirection(1, 1),
 			point + DiscreteDirection(0, 1),
 		};
 
@@ -47,13 +55,22 @@ public:
 		{
 			auto pPosition = getPosition(p);
 
-			db +=
-				getSignalStrength(p, transmitter, receiver).get<PowerCoefficient::Unit::dB>() *
-				(1 - abs(pPosition.x() - position.x()) / precision) *
-				(1 - abs(pPosition.y() - position.y()) / precision);
+			PowerCoefficient coefficient = getSignalStrength(p, transmitter, receiver);
+
+			if (coefficient.get<PowerCoefficient::Unit::coefficient>() > 0)
+				db +=
+					coefficient.get<PowerCoefficient::Unit::dB>() *
+					(1 - abs(pPosition.x() - position.x()) / precision) *
+					(1 - abs(pPosition.y() - position.y()) / precision);
 		}
 
-		return transmitter.power * transmitter.antenaGain * receiver.antenaGain * PowerCoefficient::in<PowerCoefficient::Unit::dB>(db);
+		PowerCoefficient finalCoefficient =
+			db > 0 ?
+			PowerCoefficient::in<PowerCoefficient::Unit::dB>(db)
+			:
+			PowerCoefficient::in<PowerCoefficient::Unit::coefficient>(0);
+
+		return transmitter.power * transmitter.antenaGain * receiver.antenaGain * getSignalStrength(point, transmitter, receiver);
 	}
 };
 using SignalMapPtr = std::shared_ptr<const SignalMap>;

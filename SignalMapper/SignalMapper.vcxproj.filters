@@ -42,12 +42,21 @@
     <ClInclude Include="RaycastingSignalSimulation.hpp">
       <Filter>Model</Filter>
     </ClInclude>
+    <ClInclude Include="WaveformSignalSimulation.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="BFSSignalSimulation.hpp">
+      <Filter>Model</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Test.cpp">
       <Filter>Testing</Filter>
     </ClCompile>
     <ClCompile Include="Geometry.hpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="FriisSignalSimulation.hpp">
       <Filter>Model</Filter>
     </ClCompile>
   </ItemGroup>

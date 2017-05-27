@@ -60,26 +60,20 @@ public:
 			FreeVector(std::sin(alpha), std::cos(alpha))
 		);
 
-		int intersections = 0;
+		int totalIntersections = 0;
 
-		for (int i = 0; i < points.size() - 1; i++)
-		{
-			Line wallLine(
-				points[i],
-				points[i + 1]
-			);
+		intersections(ray, [&totalIntersections](const Intersection& intersection) {
+			if (intersection.distance > 0)
+				totalIntersections++;
+		});
 
-			LineIntersection intersection(wallLine, ray);
-
-			if (intersection.intersecting && intersection.distance > 0)
-				intersections++;
-		}
-
-		return intersections % 2 == 1;
+		return totalIntersections % 2 == 1;
 	}
 
 	virtual void intersections(Vector ray, std::function<void(const Intersection&)>&& callback) const
 	{
+		double previousDotProduct = 0;
+
 		for (int i = 0; i < points.size() - 1; i++)
 		{
 			Line wallLine(
@@ -90,7 +84,19 @@ public:
 			LineIntersection intersection(wallLine, ray);
 
 			if (intersection.intersecting)
-				callback(intersection);
+			{
+				double dotProduct = intersection.normalVector * ray.freeVector;
+
+				if (dotProduct > 0 && previousDotProduct <= 0 || dotProduct < 0 && previousDotProduct >= 0)
+				{
+					previousDotProduct = dotProduct;
+					callback(intersection);
+				}
+			}
+			else
+			{
+				previousDotProduct = 0;
+			}
 		}
 	}
 };

@@ -8,25 +8,34 @@
 struct RaycastingSignalSimulationParameters {
 	int raysCount;
 	int reflectionCount;
+	Transmitter bestTransmitter;
+	Receiver bestReceiver;
+	Power minimumPower;
 
-	RaycastingSignalSimulationParameters(int raysCount = 100, int reflectionCount = 5) :
+	RaycastingSignalSimulationParameters(
+		int raysCount,
+		int reflectionCount,
+		Transmitter bestTransmitter,
+		Receiver bestReceiver,
+		Power minimumPower
+	) :
 		raysCount(raysCount),
-		reflectionCount(reflectionCount)
+		reflectionCount(reflectionCount),
+		bestTransmitter(bestTransmitter),
+		bestReceiver(bestReceiver),
+		minimumPower(minimumPower)
 	{ }
 };
 
-struct RaycastingSignalSimulationDistortion
-{
-	AbsorptionCoefficient absorption;
-	ObstacleDistortion reflection;
-
-	RaycastingSignalSimulationDistortion()
-	{}
-};
-
-class RaycastingSignalSimulation : public SignalSimulation<RaycastingSignalSimulationDistortion>
+class RaycastingSignalSimulation : public SignalSimulation
 {
 private:
+	struct Distortion
+	{
+		AbsorptionCoefficient absorption;
+		ObstacleDistortion reflection;
+	};
+
 	struct Ray
 	{
 		DiscretePoint position;
@@ -54,29 +63,54 @@ private:
 	const Frequency frequency;
 	const RaycastingSignalSimulationParameters simulationParameters;
 
-public:
-	RaycastingSignalSimulation(SignalSimulationSpaceDefinitionPtr simulationSpace, Frequency frequency, RaycastingSignalSimulationParameters simulationParameters = RaycastingSignalSimulationParameters()) :
-		SignalSimulation(simulationSpace),
-		frequency(frequency),
-		simulationParameters(simulationParameters)
-	{
-		const auto directions = DiscreteDirection::baseDirections();
-
-		for (const auto& obstacle : simulationSpace->obstacles)
+	const std::array<DiscreteDirection, 4> baseDirections{
 		{
-			for (int x = 0; x < resolution.width; x++)
+			DiscreteDirection(1, 0),
+				DiscreteDirection(-1, 0),
+				DiscreteDirection(0, 1),
+				DiscreteDirection(0, -1)
+		}
+	};
+
+	DiscreteDirection toBaseDirection(const FreeVector& vector) const
+	{
+		return DiscreteDirection(
+			std::abs(vector.dx) > std::abs(vector.dy) ? vector.dx > 0 ? 1 : -1 : 0,
+			std::abs(vector.dx) <= std::abs(vector.dy) ? vector.dy > 0 ? 1 : -1 : 0
+		);
+	}
+
+	int toBaseDirectionIndex(const DiscreteDirection& direction) const
+	{
+		if (direction.x)
+			return direction.x > 0 ? 0 : 1;
+		else
+			return direction.y > 0 ? 2 : 3;
+	}
+
+	SimulationUniformFiniteElementsSpace<std::array<Distortion, 4>> simulationSpace;
+
+public:
+	RaycastingSignalSimulation(SignalSimulationSpaceDefinitionPtr simulationSpaceDefinition, Frequency frequency, RaycastingSignalSimulationParameters simulationParameters) :
+		frequency(frequency),
+		simulationParameters(simulationParameters),
+		simulationSpace(simulationSpaceDefinition->spaceSize, simulationSpaceDefinition->precision)
+	{
+		for (const auto& obstacle : simulationSpaceDefinition->obstacles)
+		{
+			for (int x = 0; x < simulationSpace.resolution.width; x++)
 			{
-				for (int y = 0; y < resolution.height; y++)
+				for (int y = 0; y < simulationSpace.resolution.height; y++)
 				{
 					DiscretePoint firstDiscretePosition(x, y);
-					Position firstPosition = getPosition(firstDiscretePosition);
+					Position firstPosition = simulationSpace.getPosition(firstDiscretePosition);
 
-					auto& element = getElement(firstDiscretePosition);
+					auto& element = simulationSpace.getElement(firstDiscretePosition);
 
-					for (int i = 0; i < directions.size(); i++)
+					for (int i = 0; i < baseDirections.size(); i++)
 					{
-						DiscretePoint secondDiscretePosition = firstDiscretePosition + directions[i];
-						Position secondPosition = getPosition(secondDiscretePosition);
+						DiscretePoint secondDiscretePosition = firstDiscretePosition + baseDirections[i];
+						Position secondPosition = simulationSpace.getPosition(secondDiscretePosition);
 
 						auto& connection = element[i];
 
@@ -93,7 +127,12 @@ public:
 
 	virtual SignalMapPtr simulate(Position transmitterPosition) const
 	{
-		auto signalMap = std::make_shared<SignalMap>(simulationSpace->spaceSize, simulationSpace->precision);
+		auto signalMap = std::make_shared<SignalMap>(simulationSpace.surface, simulationSpace.precision);
+		auto minimumCoefficient =
+			simulationParameters.minimumPower /
+			(simulationParameters.bestTransmitter.power *
+				simulationParameters.bestTransmitter.antenaGain *
+				simulationParameters.bestReceiver.antenaGain);
 
 		std::vector<Ray> rays;
 
@@ -103,7 +142,7 @@ public:
 
 			Ray ray(
 				transmitterPosition,
-				this->getDiscretePoint(transmitterPosition),
+				simulationSpace.getDiscretePoint(transmitterPosition),
 				FreeVector(std::sin(alpha), std::cos(alpha)),
 				simulationParameters.reflectionCount
 			);
@@ -122,16 +161,19 @@ public:
 			Distance distance = ray.distance + ray.source.distanceTo(signalMap->getPosition(ray.position));
 			PowerCoefficient strength = ray.powerCoefficient * std::pow(frequency / (distance * 4 * 3.141592653589793238463), 2);
 
+			if (strength < minimumCoefficient)
+				continue;
+
 			auto& mapElement = signalMap->getElement(ray.position);
 			if (mapElement < strength)
 				mapElement = strength;
 
-			auto& connections = this->getElement(ray.position);
+			auto& connections = simulationSpace.getElement(ray.position);
 
 			FreeVector newOffset = ray.offset + ray.normalVector;
-			DiscreteDirection direction = newOffset;
+			DiscreteDirection direction = toBaseDirection(newOffset);
 
-			auto& connection = connections[direction.getIndex()];
+			auto& connection = connections[toBaseDirectionIndex(direction)];
 
 			Distance distanceDiff = distance - ray.previousDistance;
 
@@ -148,12 +190,12 @@ public:
 				rays.push_back(reflectedRay);
 			}
 
-			if (connection.absorption.get<AbsorptionCoefficient::Unit::coefficient>(simulationSpace->precision) != 1)
+			if (connection.absorption.get<AbsorptionCoefficient::Unit::coefficient>(distanceDiff) != 1)
 			{
 				ray.powerCoefficient = ray.powerCoefficient * connection.absorption.get<AbsorptionCoefficient::Unit::coefficient>(distanceDiff);
 			}
 
-			ray.position = ray.position + newOffset;
+			ray.position = ray.position + toBaseDirection(newOffset);
 			ray.offset = newOffset - direction;
 
 			ray.previousDistance = distance;

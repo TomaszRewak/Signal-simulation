@@ -33,6 +33,7 @@ class Obstacle
 {
 public:
 	virtual bool inside(Position position) const = 0;
+	virtual bool inSight(Position begin, Position end) const = 0;
 	virtual AbsorptionCoefficient absorption(Position begin, Position end, Frequency frequency) const = 0;
 	virtual ObstacleDistortion distortion(Position begin, Position end, Frequency frequency) const = 0;
 };
@@ -52,6 +53,26 @@ public:
 	virtual bool inside(Position position) const
 	{
 		return shape->contains(position.get<U>());
+	}
+
+	virtual bool inSight(Position begin, Position end) const
+	{
+		if (shape->contains(begin.get<U>()))
+			return false;
+
+		bool inSight = true;
+
+		Vector vector(
+			begin.get<U>(),
+			end.get<U>()
+		);
+
+		shape->intersections(vector, [&inSight](const Intersection& intersection) {
+			if (intersection.inRange)
+				inSight = false;
+		});
+
+		return inSight;
 	}
 
 	virtual AbsorptionCoefficient absorption(Position begin, Position end, Frequency frequency) const
@@ -79,7 +100,7 @@ public:
 			}
 		});
 
-		return coefficient;
+		return coefficient.normalized();
 	}
 
 	virtual ObstacleDistortion distortion(Position begin, Position end, Frequency frequency) const

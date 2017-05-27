@@ -65,6 +65,10 @@ public:
 		return Distance(distance.m * by);
 	}
 
+	friend bool operator<(const Distance& a, const Distance& b) {
+		return a.m < b.m;
+	}
+
 	friend Distance abs(const Distance& distance)
 	{
 		return Distance(std::abs(distance.m));
@@ -272,7 +276,12 @@ public:
 	template<>
 	void set<Unit::coefficient>(double value, Distance thickness) { set<Unit::alpha>(-std::log(value), thickness); }
 
-	bool affects() { return alpha != 0; }
+	bool affects() const { return alpha != 0; }
+
+	AbsorptionCoefficient normalized()
+	{
+		return AbsorptionCoefficient(std::max(0., alpha));
+	}
 
 	friend AbsorptionCoefficient operator+(const AbsorptionCoefficient& a, const AbsorptionCoefficient& b)
 	{
@@ -298,7 +307,8 @@ public:
 	enum class Unit
 	{
 		coefficient,
-		dB
+		dB,
+		dBm
 	};
 
 	PowerCoefficient() :
@@ -323,6 +333,8 @@ public:
 	double get<Unit::coefficient>() const { return coefficient; };
 	template<>
 	double get<Unit::dB>() const { return 10 * std::log10(coefficient); };
+	template<>
+	double get<Unit::dBm>() const { return get<Unit::dB>() + 30; };
 
 	template<Unit U>
 	void set(double value) = 0;
@@ -330,6 +342,8 @@ public:
 	void set<Unit::coefficient>(double value) { coefficient = value; }
 	template<>
 	void set<Unit::dB>(double value) { coefficient = std::pow(10.0, value / 10.0); }
+	template<>
+	void set<Unit::dBm>(double value) { set<Unit::dB>(value - 30); };
 
 	bool operator<(const PowerCoefficient& second) const
 	{
@@ -446,5 +460,10 @@ public:
 	friend Power operator*(const Power& power, const PowerCoefficient& coefficient)
 	{
 		return Power(power.mW * coefficient.get<PowerCoefficient::Unit::coefficient>());
+	}
+
+	friend PowerCoefficient operator/(const Power& a, const Power& b)
+	{
+		return PowerCoefficient(a.mW / b.mW);
 	}
 };
