@@ -154,6 +154,11 @@ public:
 
 	virtual SignalMapPtr simulate(Position transmitterPosition) const
 	{
+		Point p = transmitterPosition.get<Distance::Unit::m>();
+		p.x += 0.0001;
+		p.y += 0.0002;
+		transmitterPosition = Position::in<Distance::Unit::m>(p);
+
 		DiscretePoint transmitterDiscretePoint = simulationSpace.getDiscretePoint(transmitterPosition);
 
 		auto signalMap = std::make_shared<SignalMap>(simulationSpace.surface, simulationSpace.precision);
@@ -178,28 +183,28 @@ public:
 				DiscretePoint inSightDiscretePosition(x, y);
 				Position inSightPosition = simulationSpace.getPosition(inSightDiscretePosition);
 
-				bool inSight = true;
+				Position inSightPositionposition = signalMap->getPosition(inSightDiscretePosition);
+				Distance distance = transmitterPosition.distanceTo(inSightPositionposition);
+
+				PowerCoefficient powerCoefficient = PowerCoefficient::in<PowerCoefficient::Unit::coefficient>(1);
 
 				for (const auto& obstacle : simulationSpaceDefinition->obstacles)
 				{
-					inSight = inSight && obstacle->inSight(transmitterPosition, inSightPosition);
+					powerCoefficient = powerCoefficient * obstacle->absorption(transmitterPosition, inSightPositionposition, frequency).get<AbsorptionCoefficient::Unit::coefficient>(distance);
 				}
 
-				if (inSight)
-				{
-					DiscreteDirection direction = toBaseDirection(FreeVector(transmitterPosition.get<Distance::Unit::m>(), inSightPosition.get<Distance::Unit::m>()));
-					int directionIndex = toBaseDirectionIndex(direction);
+				DiscreteDirection direction = toBaseDirection(FreeVector(transmitterPosition.get<Distance::Unit::m>(), inSightPosition.get<Distance::Unit::m>()));
+				int directionIndex = toBaseDirectionIndex(direction);
 
-					Bot bot(
-						inSightDiscretePosition,
-						directionIndex,
-						transmitterPosition.distanceTo(inSightPosition)
-					);
+				Bot bot(
+					inSightDiscretePosition,
+					directionIndex,
+					transmitterPosition.distanceTo(inSightPosition)
+				);
 
-					connectionsMap.getElement(inSightDiscretePosition)[directionIndex].powerCoefficient = PowerCoefficient::in<PowerCoefficient::Unit::coefficient>(1);
+				connectionsMap.getElement(inSightDiscretePosition)[directionIndex].powerCoefficient = powerCoefficient;
 
-					botsA.push_back(bot);
-				}
+				botsA.push_back(bot);
 			}
 		}
 

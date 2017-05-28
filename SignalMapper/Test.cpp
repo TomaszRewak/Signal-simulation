@@ -106,7 +106,7 @@ int main()
 	SignalSimulationSpaceDefinitionPtr simulationSpace = std::make_shared<SignalSimulationSpaceDefinition>(
 		obstacles,
 		Surface::in<Distance::Unit::m>(Rectangle(-1, -1, 20.5, 14)),
-		Distance::in<Distance::Unit::m>(0.2)
+		Distance::in<Distance::Unit::m>(0.05)
 		);
 
 	cout << "Preparing simulation" << endl;
