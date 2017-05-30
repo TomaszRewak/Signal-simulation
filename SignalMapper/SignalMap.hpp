@@ -53,6 +53,9 @@ public:
 
 		for (auto p : points)
 		{
+			if (!inRange(p))
+				p = point;
+
 			auto pPosition = getPosition(p);
 
 			PowerCoefficient coefficient = getSignalStrength(p, transmitter, receiver);
