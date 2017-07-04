@@ -19,7 +19,7 @@ enum SimulationType
 
 int main()
 {
-	SimulationType type = SimulationType::BFS;
+	SimulationType type = SimulationType::Ray;
 
 	// http://www.am1.us/Protected_Papers/E10589_Propagation_Losses_2_and_5GHz.pdf
 
