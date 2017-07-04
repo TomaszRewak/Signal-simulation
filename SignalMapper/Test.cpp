@@ -190,7 +190,7 @@ int main()
 	cout << "Finished" << endl;
 
 	fstream file;
-	file.open("x64/" + filename + ".pgm", ios::out);
+	file.open("Out/" + filename + ".pgm", ios::out);
 
 	file << "P2\n";
 	file << imageSize << ' ' << imageSize << ' ' << 256 << "\n";
